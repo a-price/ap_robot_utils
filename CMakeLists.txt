@@ -6,7 +6,7 @@ set(BUILD_FLAGS "-std=c++0x -Wreturn-type")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs)
+find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
@@ -17,6 +17,7 @@ find_package(Eigen REQUIRED)
 include_directories(${EIGEN_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
+# /usr/local/lib/cmake/assimp-3.0/
 find_package(ASSIMP)
 include_directories(${ASSIMP_INCLUDE_DIR})
 link_libraries(${ASSIMP_LIBRARIES})
@@ -61,7 +62,7 @@ link_libraries(${CPPUNIT_LIBRARIES})
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ap_robot_utils
-#  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs
+#  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
 #  DEPENDS system_lib
 )
 

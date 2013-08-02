@@ -48,6 +48,7 @@
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
 #include <urdf/model.h>
+#include <resource_retriever/retriever.h>
 
 #include <assimp/mesh.h>
 #include <assimp/scene.h>
@@ -70,6 +71,9 @@ public:
 			boost::shared_ptr<urdf::Link> link = linkPair.second;
 			mMeshFrameIDs.push_back(link->name);
 		}
+
+		std::cerr << mRobotModel.getName() << std::endl;
+		this->init();
 	}
 
 	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, const std::vector<std::string>& frame_ids)
@@ -78,36 +82,74 @@ public:
 	{
 		this->mCameraFrameID = camera_frame_id;
 		//this->mCameraModel.cameraInfo().header.frame_id = camera_frame_id;
+
+		this->init();
 	}
 
 	void init()
 	{
-		for (int frame = 0; frame = mMeshFrameIDs.size(); frame++)
+		resource_retriever::Retriever r;
+		resource_retriever::MemoryResource resource;
+
+		int totalMeshes = 0;
+		int totalFaces = 0;
+		for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 		{
 			boost::shared_ptr<const urdf::Link> link = mRobotModel.getLink(mMeshFrameIDs[frame]);
-
-			if (!link->visual->geometry->type == urdf::Geometry::MESH)
+			if (link == NULL || link->visual == NULL || link->visual->geometry == NULL ||
+				!link->visual->geometry->type == urdf::Geometry::MESH)
 			{
 				continue;
 			}
 
 			boost::shared_ptr<urdf::Mesh>& mesh = (boost::shared_ptr<urdf::Mesh>&)link->visual->geometry;
-			const aiScene *scene = importer.ReadFile(mesh->filename,
-													 aiProcessPreset_TargetRealtime_Fast);
 
-			meshes.push_back(*scene->mMeshes[0]);
+			try
+			{
+				resource = r.get(mesh->filename);
+			}
+			catch (resource_retriever::Exception& e)
+			{
+				ROS_ERROR("Failed to retrieve file: %s", e.what());
+				continue;
+			}
+
+			const aiScene* scene = importer.ReadFileFromMemory(resource.data.get(), resource.size, aiProcessPreset_TargetRealtime_Fast, ".stl");
+			if (scene == NULL)
+			{
+				std::cerr << importer.GetErrorString() << std::endl;
+				continue;
+			}
+
+			totalMeshes += scene->mNumMeshes;
+			totalFaces += scene->mMeshes[0]->mNumFaces;
+			std::pair<std::string, aiScene*> tempPair = std::pair<std::string, aiScene*>(mMeshFrameIDs[frame], importer.GetOrphanedScene());
+			scenes.insert(tempPair);
 		}
+
+		std::cerr << "Initialized with " << totalMeshes << " meshes and " << totalFaces << " faces." << std::endl;
+	}
+
+	Eigen::Vector3f getEigenVector3f(aiVector3D* vec)
+	{
+		Eigen::Vector3f newVector;
+		newVector.x() = vec->x;
+		newVector.y() = vec->y;
+		newVector.z() = vec->z;
+		return newVector;
 	}
 
 	cv::Mat projectWithTF(tf::TransformListener& tfListener)
 	{
 		// For each pixel in camera image
 		cv::Mat robotImage(mCameraModel.cameraInfo().width, mCameraModel.cameraInfo().height, CV_32F);
+		float* pixelPtr = (float*)robotImage.data;
 		for (int v = 0; v < robotImage.rows; v++)
 		{
 			for (int u = 0; u < robotImage.cols; u++)
 			{
 				// Create a ray through the pixel
+				int pixelIdx = u + (v * robotImage.cols);
 				cv::Point2d pixel = cv::Point2d(u, v);
 				cv::Point3d cvRay = mCameraModel.projectPixelTo3dRay(pixel);
 				// Convert cvRay to ap::Ray
@@ -124,9 +166,38 @@ public:
 
 
 					// Get mesh for each frame
+					aiScene* scene = scenes.at(mMeshFrameIDs[frame]);
+					aiMesh* mesh = scene->mMeshes[0];
 
 					// For each triangle in mesh
-					// Check for intersection. If finite, set distance
+					for (int i = 0; i < mesh->mNumFaces; i++)
+					{
+						// Check for intersection. If finite, set distance
+						aiFace* face = &(mesh->mFaces[i]);
+						if (face->mNumIndices != 3)
+						{
+							continue;
+						}
+
+						Eigen::Vector3f vertexA = getEigenVector3f(&mesh->mVertices[face->mIndices[0]]);
+						Eigen::Vector3f vertexB = getEigenVector3f(&mesh->mVertices[face->mIndices[1]]);
+						Eigen::Vector3f vertexC = getEigenVector3f(&mesh->mVertices[face->mIndices[2]]);
+
+						ap::Triangle triangle(vertexA, vertexB, vertexC);
+
+						Eigen::Vector3f intersection = ap::intersectRayTriangle(ray, triangle);
+						if (std::isfinite(intersection.x()))
+						{
+							float d = intersection.norm();
+							float val = pixelPtr[pixelIdx];
+							if (val == 0 || val > d)
+							{
+								pixelPtr[pixelIdx] = d;
+							}
+						}
+
+
+					}
 
 				}
 
@@ -146,7 +217,7 @@ protected:
 	image_geometry::PinholeCameraModel mCameraModel;
 
 	Assimp::Importer importer;
-	std::vector<aiMesh> meshes;
+	std::map<std::string, aiScene*> scenes;
 };
 
 

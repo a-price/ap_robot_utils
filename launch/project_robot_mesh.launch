@@ -1,0 +1,5 @@
+<launch>
+	<param name="/robot_description" textfile="$(find drchubo-v2)/robots/drchubo-v2.urdf" />
+
+    <node name="project_robot_mesh" pkg="ap_robot_utils" type="project_robot_mesh" output="screen" />
+</launch>
