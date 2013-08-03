@@ -1,5 +1,9 @@
 <launch>
 	<param name="/robot_description" textfile="$(find drchubo-v2)/robots/drchubo-v2.urdf" />
+	<param name="use_gui" value="true"/>
 
-    <node name="project_robot_mesh" pkg="ap_robot_utils" type="project_robot_mesh" />
+	<node name="project_robot_mesh" pkg="ap_robot_utils" type="project_robot_mesh" output="screen" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+	
 </launch>

@@ -1,5 +1,12 @@
 <launch>
 	<param name="/robot_description" textfile="$(find drchubo-v2)/robots/drchubo-v2.urdf" />
+	<param name="use_gui" value="true"/>
 
-    <node name="project_robot_mesh" pkg="ap_robot_utils" type="project_robot_mesh" output="screen" />
+	<node name="project_robot_mesh" pkg="ap_robot_utils" type="project_robot_mesh" output="screen" />
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+	
+	<node name="ps_mount_publisher" pkg="tf" type="static_transform_publisher" args="0.0381 -0.1397 0 0 0 1.57079632679 /Body_NK1 /Body_PS_Mount 100" />
+	<node name="ps1_publisher" pkg="tf" type="static_transform_publisher" args="0.0381 0 0.0127 0 0.84 0 /Body_PS_Mount /Body_PS1 100" />
+	<node name="ps2_publisher" pkg="tf" type="static_transform_publisher" args="0.0508 0 0.1016 0 0 0 /Body_PS_Mount /Body_PS2 100" />
 </launch>

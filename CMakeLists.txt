@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
 set(BUILD_FLAGS "-std=c++0x -Wreturn-type")
+#SET(CMAKE_BUILD_TYPE "Release")
 
 # Add additional CMake files
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
@@ -53,17 +54,12 @@ link_libraries(${CPPUNIT_LIBRARIES})
 ###################################
 ## catkin specific configuration ##
 ###################################
-## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ap_robot_utils
-#  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+  LIBRARIES ap_robot_utils
+  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
+  DEPENDS system_lib
 )
 
 ###########
@@ -72,69 +68,25 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include)
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-)
+include_directories(include ${catkin_INCLUDE_DIRS})
+link_libraries(${catkin_LIBRARIES})
 
 ## Declare a cpp library
-add_library(${PROJECT_NAME}
-  src/libraries/geometry_utils.cpp
-)
+add_library(${PROJECT_NAME} src/libraries/geometry_utils.cpp src/libraries/pose_conversions.cpp)
 
 ## Declare a cpp executable
 add_executable(project_robot_mesh src/project_robot_mesh.cpp)
 set_target_properties(project_robot_mesh PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
 
 ## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
 # add_dependencies(ap_robot_utils_node ap_robot_utils_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(project_robot_mesh
-  ${PROJECT_NAME} ${catkin_LIBRARIES}
-)
-
-## Allow Testing
-enable_testing()
-
-file(GLOB unit_tests_source "test/unit/*.cpp")
-list(SORT unit_tests_source)
-
-# Build full test
-add_executable(TestAllUnits "test/test_units.cpp" ${unit_tests_source})
-add_test(TestAllUnits ${EXECUTABLE_OUTPUT_PATH}/TestAllUnits)
-target_link_libraries(TestAllUnits ${PROJECT_NAME})
-set_target_properties(TestAllUnits PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
-add_dependencies(tests TestAllUnits)
-
-# Build unit tests
-message(STATUS "\n-- UNIT TESTS: ")
-foreach(utest_src_file ${unit_tests_source})
-	get_filename_component(test_base ${utest_src_file} NAME_WE)
-	message(STATUS "Adding test ${test_base}" )
-	add_executable(${test_base} "test/test_units.cpp" ${utest_src_file})
-	add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
-	#catkin_add_gtest(${test_base} src/tests/unit/TestParameterizedObject.cpp)
-	target_link_libraries(${test_base} ${PROJECT_NAME})
-	set_target_properties(${test_base} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
-	add_dependencies(tests ${test_base})
-endforeach(utest_src_file)
+target_link_libraries(project_robot_mesh ${PROJECT_NAME} ${catkin_LIBRARIES})
 
 #############
 ## Install ##
 #############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
 ## Mark executables and/or libraries for installation
 # install(TARGETS ap_robot_utils ap_robot_utils_node
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -160,11 +112,29 @@ endforeach(utest_src_file)
 ## Testing ##
 #############
 
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_ap_robot_utils.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
+## Allow Testing
+enable_testing()
 
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+# Grab all unit test files
+file(GLOB unit_tests_source "test/unit/*.cpp")
+list(SORT unit_tests_source)
+
+# Build full unit test
+add_executable(TestAllUnits "test/test_units.cpp" ${unit_tests_source})
+add_test(TestAllUnits ${EXECUTABLE_OUTPUT_PATH}/TestAllUnits)
+target_link_libraries(TestAllUnits ${PROJECT_NAME})
+set_target_properties(TestAllUnits PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
+add_dependencies(tests TestAllUnits)
+
+# Build standalone unit tests
+message(STATUS "\n-- UNIT TESTS: ")
+foreach(utest_src_file ${unit_tests_source})
+	get_filename_component(test_base ${utest_src_file} NAME_WE)
+	message(STATUS "Adding test ${test_base}" )
+	add_executable(${test_base} "test/test_units.cpp" ${utest_src_file})
+	add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
+	#catkin_add_gtest(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
+	target_link_libraries(${test_base} ${PROJECT_NAME})
+	set_target_properties(${test_base} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
+	add_dependencies(tests ${test_base})
+endforeach(utest_src_file)

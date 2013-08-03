@@ -56,12 +56,18 @@
 #include <assimp/postprocess.h>
 
 #include <ap_robot_utils/geometry_utils.h>
+#include <ap_robot_utils/pose_conversions.h>
 
 class MeshProjector
 {
 public:
-	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id)
-		: mRobotModel(robotModel)
+	//typedef std::map<std::string, Eigen::Isometry3f, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3f> > > TransformMap;
+	typedef std::map<std::string, aiMatrix4x4> TransformMap;
+
+
+	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, ros::NodeHandle nh)
+		: mRobotModel(robotModel),
+		  mNH(nh)
 	{
 		this->mCameraFrameID = camera_frame_id;
 		//this->mCameraModel.cameraInfo().header.frame_id = camera_frame_id;
@@ -76,8 +82,9 @@ public:
 		this->init();
 	}
 
-	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, const std::vector<std::string>& frame_ids)
+	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, ros::NodeHandle nh, const std::vector<std::string>& frame_ids)
 		: mRobotModel(robotModel),
+		  mNH(nh),
 		  mMeshFrameIDs(frame_ids)
 	{
 		this->mCameraFrameID = camera_frame_id;
@@ -139,7 +146,31 @@ public:
 		return newVector;
 	}
 
-	cv::Mat projectWithTF(tf::TransformListener& tfListener)
+	cv::Mat projectWithTF()
+	{
+		// For each frame in vector
+		for (int frame = 0; frame = mMeshFrameIDs.size(); frame++)
+		{
+			// Lookup current transform
+			tf::StampedTransform transform;
+
+			try
+			{
+				mTFListener.lookupTransform(mCameraFrameID, mMeshFrameIDs[frame], ros::Time(0), transform);
+				aiMatrix4x4 aTransform = ap::toAssimp(transform);
+				TransformMap::value_type tfPair(mMeshFrameIDs[frame], aTransform);
+				transforms.insert(tfPair);
+			}
+			catch (int err)
+			{
+				transforms.erase(mMeshFrameIDs[frame]);
+			}
+		}
+
+		return projectWithEigen();
+	}
+
+	cv::Mat projectWithEigen()
 	{
 		// For each pixel in camera image
 		cv::Mat robotImage(mCameraModel.cameraInfo().width, mCameraModel.cameraInfo().height, CV_32F);
@@ -161,27 +192,33 @@ public:
 				for (int frame = 0; frame = mMeshFrameIDs.size(); frame++)
 				{
 					// Lookup current transform
-					tf::StampedTransform transform;
-					tfListener.lookupTransform(mCameraFrameID, mMeshFrameIDs[frame], ros::Time(0), transform);
+					aiMatrix4x4 transform;
+					transform = transforms.at(mMeshFrameIDs[frame]);
 
-
-					// Get mesh for each frame
+					// Get copy of mesh for each frame
 					aiScene* scene = scenes.at(mMeshFrameIDs[frame]);
-					aiMesh* mesh = scene->mMeshes[0];
+					aiMesh mesh = *scene->mMeshes[0];
+
+					// Transform mesh into camera frame
+					for (int i = 0; i < mesh.mNumVertices; i++)
+					{
+						aiVector3D newVertex = transform * mesh.mVertices[i];
+						mesh.mVertices[i] = newVertex;
+					}
 
 					// For each triangle in mesh
-					for (int i = 0; i < mesh->mNumFaces; i++)
+					for (int i = 0; i < mesh.mNumFaces; i++)
 					{
 						// Check for intersection. If finite, set distance
-						aiFace* face = &(mesh->mFaces[i]);
+						aiFace* face = &(mesh.mFaces[i]);
 						if (face->mNumIndices != 3)
 						{
 							continue;
 						}
 
-						Eigen::Vector3f vertexA = getEigenVector3f(&mesh->mVertices[face->mIndices[0]]);
-						Eigen::Vector3f vertexB = getEigenVector3f(&mesh->mVertices[face->mIndices[1]]);
-						Eigen::Vector3f vertexC = getEigenVector3f(&mesh->mVertices[face->mIndices[2]]);
+						Eigen::Vector3f vertexA = getEigenVector3f(&mesh.mVertices[face->mIndices[0]]);
+						Eigen::Vector3f vertexB = getEigenVector3f(&mesh.mVertices[face->mIndices[1]]);
+						Eigen::Vector3f vertexC = getEigenVector3f(&mesh.mVertices[face->mIndices[2]]);
 
 						ap::Triangle triangle(vertexA, vertexB, vertexC);
 
@@ -195,12 +232,8 @@ public:
 								pixelPtr[pixelIdx] = d;
 							}
 						}
-
-
 					}
-
 				}
-
 			}
 		}
 
@@ -211,6 +244,8 @@ public:
 protected:
 	std::string mCameraFrameID;
 	std::vector<std::string> mMeshFrameIDs;
+	tf::TransformListener mTFListener;
+	ros::NodeHandle mNH;
 
 	urdf::Model mRobotModel;
 
@@ -218,24 +253,35 @@ protected:
 
 	Assimp::Importer importer;
 	std::map<std::string, aiScene*> scenes;
+	TransformMap transforms;
 };
 
+MeshProjector* gMP;
+
+void timerCallback(const ros::TimerEvent&)
+{
+	std::cerr << "Timer!" << std::endl;
+	gMP->projectWithTF();
+}
 
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "project_robot_mesh");
-	ros::NodeHandle m_nh;
+	ros::NodeHandle nh;
 
 	urdf::Model robotModel;
 
 	std::string robotDescription;
-	if (!m_nh.getParam("/robot_description", robotDescription))
+	if (!nh.getParam("/robot_description", robotDescription))
 	{
 		ROS_FATAL("Parameter for robot description not provided");
 	}
 	robotModel.initString(robotDescription);
 
-	MeshProjector(robotModel, "head_frame");
+	gMP = new MeshProjector(robotModel, "/Body_PS1", nh);
+
+	std::cerr << "Make a timer!" << std::endl;
+	ros::Timer timer = nh.createTimer(ros::Duration(1), &timerCallback);
 
 	ros::spin();
 }
