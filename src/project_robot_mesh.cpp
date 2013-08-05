@@ -47,6 +47,7 @@
 #include <tf/transform_listener.h>
 #include <boost/foreach.hpp>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/distortion_models.h>
 #include <urdf/model.h>
 #include <resource_retriever/retriever.h>
 
@@ -57,6 +58,37 @@
 
 #include <ap_robot_utils/geometry_utils.h>
 #include <ap_robot_utils/pose_conversions.h>
+
+image_geometry::PinholeCameraModel createIdealCamera()
+{
+	image_geometry::PinholeCameraModel cam;
+	sensor_msgs::CameraInfo camInfo;
+	camInfo.width = 640;
+	camInfo.height = 480;
+
+	//camInfo.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+
+	camInfo.K = (boost::array<double, 9ul>)
+				{1.0, 0.0, camInfo.width/2.0,
+				 0.0, 1.0, camInfo.height/2.0,
+				 0.0, 0.0, 1.0};
+
+	camInfo.P = (boost::array<double, 12ul>)
+				{1.0, 0.0, camInfo.width/2.0, 0.0,
+				 0.0, 1.0, camInfo.height/2.0, 0.0,
+				 0.0, 0.0, 1.0, 0.0};
+
+	camInfo.R = (boost::array<double, 9ul>)
+				{1.0, 0.0, 0.0,
+				 0.0, 1.0, 0.0,
+				 0.0, 0.0, 1.0};
+
+	cam.fromCameraInfo(camInfo);
+
+	std::cerr << camInfo << std::endl;
+
+	return cam;
+}
 
 class MeshProjector
 {
@@ -70,6 +102,7 @@ public:
 		  mNH(nh)
 	{
 		this->mCameraFrameID = camera_frame_id;
+		this->mCameraModel = createIdealCamera();
 		//this->mCameraModel.cameraInfo().header.frame_id = camera_frame_id;
 
 		for (std::pair<std::string, boost::shared_ptr<urdf::Link> >  linkPair : mRobotModel.links_)
@@ -88,6 +121,7 @@ public:
 		  mMeshFrameIDs(frame_ids)
 	{
 		this->mCameraFrameID = camera_frame_id;
+		this->mCameraModel = createIdealCamera();
 		//this->mCameraModel.cameraInfo().header.frame_id = camera_frame_id;
 
 		this->init();
@@ -149,7 +183,7 @@ public:
 	cv::Mat projectWithTF()
 	{
 		// For each frame in vector
-		for (int frame = 0; frame = mMeshFrameIDs.size(); frame++)
+		for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 		{
 			// Lookup current transform
 			tf::StampedTransform transform;
@@ -173,6 +207,8 @@ public:
 	cv::Mat projectWithEigen()
 	{
 		// For each pixel in camera image
+		std::cerr << "In function!" << std::endl;
+		std::cerr << mCameraModel.cameraInfo().width << std::endl;
 		cv::Mat robotImage(mCameraModel.cameraInfo().width, mCameraModel.cameraInfo().height, CV_32F);
 		float* pixelPtr = (float*)robotImage.data;
 		for (int v = 0; v < robotImage.rows; v++)
@@ -181,45 +217,59 @@ public:
 			{
 				// Create a ray through the pixel
 				int pixelIdx = u + (v * robotImage.cols);
+				std::cerr << "Pixel (" << u << "," << v << ")" << std::endl;
 				cv::Point2d pixel = cv::Point2d(u, v);
 				cv::Point3d cvRay = mCameraModel.projectPixelTo3dRay(pixel);
+				std::cerr << "Success." << std::endl;
 				// Convert cvRay to ap::Ray
 				ap::Ray ray;
 				ray.point = Eigen::Vector3f::Zero();
 				ray.vector.x() = cvRay.x; ray.vector.y() = cvRay.y; ray.vector.z() = cvRay.z;
+				std::cerr << ray.vector.transpose() << std::endl;
 
 				// For each frame in vector
-				for (int frame = 0; frame = mMeshFrameIDs.size(); frame++)
+				for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 				{
 					// Lookup current transform
 					aiMatrix4x4 transform;
 					transform = transforms.at(mMeshFrameIDs[frame]);
 
 					// Get copy of mesh for each frame
+					std::cerr << "Getting frame " << frame << std::endl;
 					aiScene* scene = scenes.at(mMeshFrameIDs[frame]);
 					aiMesh mesh = *scene->mMeshes[0];
+					std::cerr << scene->mMeshes[0]->HasFaces() << std::endl;
 
 					// Transform mesh into camera frame
-					for (int i = 0; i < mesh.mNumVertices; i++)
-					{
-						aiVector3D newVertex = transform * mesh.mVertices[i];
-						mesh.mVertices[i] = newVertex;
-					}
+//					for (int i = 0; i < mesh.mNumVertices; i++)
+//					{
+//						aiVector3D newVertex = transform * mesh.mVertices[i];
+//						mesh.mVertices[i] = newVertex;
+//					}
 
 					// For each triangle in mesh
 					for (int i = 0; i < mesh.mNumFaces; i++)
 					{
+						std::cerr << "Getting face " << i << " of " << mesh.mNumFaces << std::endl;
 						// Check for intersection. If finite, set distance
-						aiFace* face = &(mesh.mFaces[i]);
-						if (face->mNumIndices != 3)
+						aiFace face = mesh.mFaces[i];
+//						if (NULL == face)
+//						{
+//							continue;
+//						}
+
+						if (face.mNumIndices != 3)
 						{
+							std::cerr << "??? " << face.mNumIndices << " vertices detected ???" << std::endl;
 							continue;
 						}
 
-						Eigen::Vector3f vertexA = getEigenVector3f(&mesh.mVertices[face->mIndices[0]]);
-						Eigen::Vector3f vertexB = getEigenVector3f(&mesh.mVertices[face->mIndices[1]]);
-						Eigen::Vector3f vertexC = getEigenVector3f(&mesh.mVertices[face->mIndices[2]]);
+						std::cerr << "Creating Eigen vectors" << std::endl;
+						Eigen::Vector3f vertexA = getEigenVector3f(&mesh.mVertices[face.mIndices[0]]);
+						Eigen::Vector3f vertexB = getEigenVector3f(&mesh.mVertices[face.mIndices[1]]);
+						Eigen::Vector3f vertexC = getEigenVector3f(&mesh.mVertices[face.mIndices[2]]);
 
+						std::cerr << "Creating Eigen Triangle" << std::endl;
 						ap::Triangle triangle(vertexA, vertexB, vertexC);
 
 						Eigen::Vector3f intersection = ap::intersectRayTriangle(ray, triangle);
@@ -282,6 +332,7 @@ int main(int argc, char** argv)
 
 	std::cerr << "Make a timer!" << std::endl;
 	ros::Timer timer = nh.createTimer(ros::Duration(1), &timerCallback);
+	timer.start();
 
 	ros::spin();
 }
