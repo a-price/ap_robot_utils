@@ -44,6 +44,7 @@ namespace ap
 Eigen::Vector3f intersectRayPlane(Ray r, Plane p)
 {
 	float temp = (r.point.dot(p.normal) + p.distance)/(r.vector.dot(p.normal));
+	if (temp == 0) { temp = NAN; } // Plane contains ray origin
 	Eigen::Vector3f intersection = r.point + (temp * r.vector);
 	return intersection;
 }
@@ -69,7 +70,6 @@ Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t)
 		float d = r.point.dot(tempNorm);
 		if (result.dot(tempNorm) > d)
 		{
-			std::cerr << "Not in the triangle!" << std::endl;
 			insideTriangle = false;
 			result.x() = NAN;
 			result.y() = NAN;
