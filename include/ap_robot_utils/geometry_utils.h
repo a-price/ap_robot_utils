@@ -39,6 +39,7 @@
 #define GEOMETRY_UTILS_H
 
 #include <deque>
+#include <vector>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -46,6 +47,13 @@
 
 namespace ap
 {
+
+typedef std::vector<Eigen::Quaternionf, Eigen::aligned_allocator<Eigen::Quaternionf> > QuaternionStdVector;
+Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
+									  std::vector<float>* weights = NULL);
+
+
+
 typedef Eigen::Vector3f Point;
 
 class Ray

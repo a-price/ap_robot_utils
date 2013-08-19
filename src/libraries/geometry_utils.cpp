@@ -37,9 +37,73 @@
 
 #include "ap_robot_utils/geometry_utils.h"
 #include <cmath>
+#include <Eigen/SVD>
 
 namespace ap
 {
+void setQuaternionDataVector(Eigen::Quaternionf& q, const Eigen::Vector4f& v)
+{
+	q.w() = v.w();
+	q.x() = v.x();
+	q.y() = v.y();
+	q.z() = v.z();
+}
+
+void getQuaternionDataVector(const Eigen::Quaternionf& q, Eigen::Vector4f& v)
+{
+	v.w() = q.w();
+	v.x() = q.x();
+	v.y() = q.y();
+	v.z() = q.z();
+}
+
+Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
+									  std::vector<float>* weights)
+{
+	Eigen::Matrix4f accumulator = Eigen::Matrix4f::Zero();
+	int n = qs.size();
+	Eigen::Vector4f qVec;
+
+	for (int i = 0; i < n; i++)
+	{
+		qs[i].normalize();
+	}
+
+	if (weights != NULL && weights->size() == n)
+	{
+		float totalWeight;
+		for (int i = 0; i < n; i++)
+		{
+			Eigen::Quaternionf& q = qs[i];
+			getQuaternionDataVector(q, qVec);
+			accumulator += (qVec * qVec.transpose()) * (*weights)[i];
+			totalWeight += (*weights)[i];
+		}
+
+		accumulator /= totalWeight;
+	}
+	else
+	{
+		for (int i = 0; i < n; i++)
+		{
+			Eigen::Quaternionf& q = qs[i];
+			getQuaternionDataVector(q, qVec);
+			accumulator += qVec * qVec.transpose();
+		}
+
+		accumulator /= (float)n;
+	}
+
+	Eigen::JacobiSVD<Eigen::Matrix4f> svd(accumulator, Eigen::ComputeFullU);
+	qVec = svd.matrixU().col(0);
+
+	Eigen::Quaternionf retVal;
+	setQuaternionDataVector(retVal, qVec);
+	retVal.normalize();
+
+	return retVal;
+
+}
 
 Eigen::Vector3f intersectRayPlane(Ray r, Plane p)
 {
