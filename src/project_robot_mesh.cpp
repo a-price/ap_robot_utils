@@ -51,13 +51,67 @@
 #include <urdf/model.h>
 #include <resource_retriever/retriever.h>
 
-#include <assimp/mesh.h>
-#include <assimp/scene.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
+#include <assimp/aiMesh.h>
+#include <assimp/aiScene.h>
+#include <assimp/aiPostProcess.h>
+#include <assimp/assimp.hpp>
 
 #include <ap_robot_utils/geometry_utils.h>
 #include <ap_robot_utils/pose_conversions.h>
+
+std::ostream& operator <<(std::ostream& s, aiVector3D vec)
+{
+	s << "(" << vec.x << "," << vec.y << "," << vec.z << ")";
+	return s;
+}
+
+ap::Mesh* meshAItoAP(const aiScene* inScene)
+{
+	ap::Mesh* outMesh = new ap::Mesh();
+
+	// Find the triangle mesh
+	int triMeshIdx = 0;
+	for (int i = 0; i < inScene->mNumMeshes; i++)
+	{
+		if (inScene->mMeshes[i]->HasFaces() && inScene->mMeshes[i]->mFaces[0].mNumIndices == 3)
+		{
+			triMeshIdx = i;
+		}
+	}
+
+	// Copy vertices
+	outMesh->vertices.resize(inScene->mMeshes[triMeshIdx]->mNumVertices);
+	for (int i = 0; i < inScene->mMeshes[triMeshIdx]->mNumVertices; i++)
+	{
+		outMesh->vertices[i] = Eigen::Vector3f(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
+											   inScene->mMeshes[triMeshIdx]->mVertices[i].y,
+											   inScene->mMeshes[triMeshIdx]->mVertices[i].z);
+		//std::cerr << outMesh->vertices[i].transpose() << std::endl;
+	}
+
+	if (NULL == inScene->mMeshes[triMeshIdx]->mFaces)
+	{
+		std::cerr << "WTF?" << std::endl;
+		return NULL;
+	}
+	outMesh->faces.resize(inScene->mMeshes[triMeshIdx]->mNumFaces);
+
+	// Copy Faces (lists of vertex indices)
+	for (int i = 0; i < inScene->mMeshes[triMeshIdx]->mNumFaces; i++)
+	{
+		if (3 != inScene->mMeshes[triMeshIdx]->mFaces[i].mNumIndices)
+		{
+			std::cerr << "WTF?" << std::endl;
+			continue;
+		}
+
+		outMesh->faces[i].vertices[0] = inScene->mMeshes[triMeshIdx]->mFaces[i].mIndices[0];
+		outMesh->faces[i].vertices[1] = inScene->mMeshes[triMeshIdx]->mFaces[i].mIndices[1];
+		outMesh->faces[i].vertices[2] = inScene->mMeshes[triMeshIdx]->mFaces[i].mIndices[2];
+	}
+
+	return outMesh;
+}
 
 image_geometry::PinholeCameraModel createIdealCamera()
 {
@@ -69,13 +123,13 @@ image_geometry::PinholeCameraModel createIdealCamera()
 	//camInfo.distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
 
 	camInfo.K = (boost::array<double, 9ul>)
-				{1.0, 0.0, camInfo.width/2.0,
-				 0.0, 1.0, camInfo.height/2.0,
+				{100.0, 0.0, camInfo.width/2.0,
+				 0.0, 100.0, camInfo.height/2.0,
 				 0.0, 0.0, 1.0};
 
 	camInfo.P = (boost::array<double, 12ul>)
-				{1.0, 0.0, camInfo.width/2.0, 0.0,
-				 0.0, 1.0, camInfo.height/2.0, 0.0,
+				{100.0, 0.0, camInfo.width/2.0, 0.0,
+				 0.0, 100.0, camInfo.height/2.0, 0.0,
 				 0.0, 0.0, 1.0, 0.0};
 
 	camInfo.R = (boost::array<double, 9ul>)
@@ -93,8 +147,9 @@ image_geometry::PinholeCameraModel createIdealCamera()
 class MeshProjector
 {
 public:
-	//typedef std::map<std::string, Eigen::Isometry3f, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3f> > > TransformMap;
-	typedef std::map<std::string, aiMatrix4x4> TransformMap;
+	typedef std::map<std::string, Eigen::Isometry3f, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3f> > > TransformMap;
+	//typedef std::map<std::string, aiMatrix4x4> TransformMap;
+	typedef std::map<std::string, ap::Mesh*> MeshMap;
 
 
 	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, ros::NodeHandle nh)
@@ -155,7 +210,17 @@ public:
 				continue;
 			}
 
-			const aiScene* scene = importer.ReadFileFromMemory(resource.data.get(), resource.size, aiProcessPreset_TargetRealtime_Fast, ".stl");
+			const aiScene* scene = importer.ReadFileFromMemory(resource.data.get(), resource.size,
+															   aiProcess_ValidateDataStructure |
+															   aiProcess_JoinIdenticalVertices |
+															   aiProcess_ImproveCacheLocality |
+															   aiProcess_Triangulate |
+															   aiProcess_OptimizeGraph |
+															   aiProcess_OptimizeMeshes |
+															   aiProcess_FindDegenerates |
+															   aiProcess_SortByPType,
+															   ".stl");
+
 			if (scene == NULL)
 			{
 				std::cerr << importer.GetErrorString() << std::endl;
@@ -164,8 +229,9 @@ public:
 
 			totalMeshes += scene->mNumMeshes;
 			totalFaces += scene->mMeshes[0]->mNumFaces;
-			std::pair<std::string, aiScene*> tempPair = std::pair<std::string, aiScene*>(mMeshFrameIDs[frame], importer.GetOrphanedScene());
-			scenes.insert(tempPair);
+			//MeshMap::value_type tempPair = MeshMap::value_type(mMeshFrameIDs[frame], *scene->mMeshes[0]);
+			scenes.insert(MeshMap::value_type(mMeshFrameIDs[frame], meshAItoAP(scene)));
+			transformedScenes.insert(MeshMap::value_type(mMeshFrameIDs[frame], meshAItoAP(scene)));
 		}
 
 		std::cerr << "Initialized with " << totalMeshes << " meshes and " << totalFaces << " faces." << std::endl;
@@ -191,7 +257,7 @@ public:
 			try
 			{
 				mTFListener.lookupTransform(mCameraFrameID, mMeshFrameIDs[frame], ros::Time(0), transform);
-				aiMatrix4x4 aTransform = ap::toAssimp(transform);
+				Eigen::Isometry3f aTransform = ap::toIsometry(transform);
 				TransformMap::value_type tfPair(mMeshFrameIDs[frame], aTransform);
 				transforms.insert(tfPair);
 			}
@@ -206,71 +272,74 @@ public:
 
 	cv::Mat projectWithEigen()
 	{
+		// Transform meshes into camera frame
+
+		// For each frame in vector
+		for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
+		{
+			// Lookup current transform
+			Eigen::Isometry3f transform;
+			transform = transforms.at(mMeshFrameIDs[frame]);
+
+			// Get copy of mesh for each frame
+			ap::Mesh* sourceMesh;
+			ap::Mesh* transformedMesh;
+			//std::cerr << "Getting frame " << frame << " : " << mMeshFrameIDs[frame] << std::endl;
+			MeshMap::iterator scene_i = scenes.find(mMeshFrameIDs[frame]);
+			if (scenes.end() == scene_i) { continue; }
+			sourceMesh = scene_i->second;
+
+			MeshMap::iterator scene_t = transformedScenes.find(mMeshFrameIDs[frame]);
+			if (transformedScenes.end() == scene_t) { continue; }
+			transformedMesh = scene_t->second;
+
+			// Transform mesh into camera frame
+			for (int i = 0; i < sourceMesh->vertices.size(); i++)
+			{
+				Eigen::Vector3f newVertex = transform * sourceMesh->vertices[i];
+				//std::cerr << mesh->vertices[i].transpose() << "\t->\t" << newVertex.transpose() << std::endl;
+				transformedMesh->vertices[i] = newVertex;
+			}
+		}
+
 		// For each pixel in camera image
-		std::cerr << "In function!" << std::endl;
-		std::cerr << mCameraModel.cameraInfo().width << std::endl;
-		cv::Mat robotImage(mCameraModel.cameraInfo().width, mCameraModel.cameraInfo().height, CV_32F);
+		cv::Mat robotImage(mCameraModel.cameraInfo().height, mCameraModel.cameraInfo().width, CV_32F);
 		float* pixelPtr = (float*)robotImage.data;
+		float maxDepth = 0;
 		for (int v = 0; v < robotImage.rows; v++)
 		{
 			for (int u = 0; u < robotImage.cols; u++)
 			{
 				// Create a ray through the pixel
 				int pixelIdx = u + (v * robotImage.cols);
-				std::cerr << "Pixel (" << u << "," << v << ")" << std::endl;
+				//std::cerr << "Pixel (" << u << "," << v << ")" << std::endl;
 				cv::Point2d pixel = cv::Point2d(u, v);
 				cv::Point3d cvRay = mCameraModel.projectPixelTo3dRay(pixel);
-				std::cerr << "Success." << std::endl;
 				// Convert cvRay to ap::Ray
 				ap::Ray ray;
 				ray.point = Eigen::Vector3f::Zero();
 				ray.vector.x() = cvRay.x; ray.vector.y() = cvRay.y; ray.vector.z() = cvRay.z;
-				std::cerr << ray.vector.transpose() << std::endl;
+				ray.vector.normalize();
+				//std::cerr << ray.vector.transpose() << std::endl;
 
 				// For each frame in vector
 				for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 				{
-					// Lookup current transform
-					aiMatrix4x4 transform;
-					transform = transforms.at(mMeshFrameIDs[frame]);
-
-					// Get copy of mesh for each frame
-					std::cerr << "Getting frame " << frame << std::endl;
-					aiScene* scene = scenes.at(mMeshFrameIDs[frame]);
-					aiMesh mesh = *scene->mMeshes[0];
-					std::cerr << scene->mMeshes[0]->HasFaces() << std::endl;
-
-					// Transform mesh into camera frame
-//					for (int i = 0; i < mesh.mNumVertices; i++)
-//					{
-//						aiVector3D newVertex = transform * mesh.mVertices[i];
-//						mesh.mVertices[i] = newVertex;
-//					}
+					MeshMap::iterator scene_i = transformedScenes.find(mMeshFrameIDs[frame]);
+					if (transformedScenes.end() == scene_i)
+					{
+						continue;
+					}
+					ap::Mesh* mesh = scene_i->second;
 
 					// For each triangle in mesh
-					for (int i = 0; i < mesh.mNumFaces; i++)
+					for (int i = 0; i < mesh->faces.size(); i++)
 					{
-						std::cerr << "Getting face " << i << " of " << mesh.mNumFaces << std::endl;
 						// Check for intersection. If finite, set distance
-						aiFace face = mesh.mFaces[i];
-//						if (NULL == face)
-//						{
-//							continue;
-//						}
 
-						if (face.mNumIndices != 3)
-						{
-							std::cerr << "??? " << face.mNumIndices << " vertices detected ???" << std::endl;
-							continue;
-						}
-
-						std::cerr << "Creating Eigen vectors" << std::endl;
-						Eigen::Vector3f vertexA = getEigenVector3f(&mesh.mVertices[face.mIndices[0]]);
-						Eigen::Vector3f vertexB = getEigenVector3f(&mesh.mVertices[face.mIndices[1]]);
-						Eigen::Vector3f vertexC = getEigenVector3f(&mesh.mVertices[face.mIndices[2]]);
-
-						std::cerr << "Creating Eigen Triangle" << std::endl;
-						ap::Triangle triangle(vertexA, vertexB, vertexC);
+						ap::Triangle triangle(mesh->vertices[mesh->faces[i].vertices[0]],
+											  mesh->vertices[mesh->faces[i].vertices[1]],
+											  mesh->vertices[mesh->faces[i].vertices[2]]);
 
 						Eigen::Vector3f intersection = ap::intersectRayTriangle(ray, triangle);
 						if (std::isfinite(intersection.x()))
@@ -281,6 +350,10 @@ public:
 							{
 								pixelPtr[pixelIdx] = d;
 							}
+							if (d > maxDepth)
+							{
+								maxDepth = d;
+							}
 						}
 					}
 				}
@@ -288,7 +361,8 @@ public:
 		}
 
 		// Return the matrix
-		return robotImage;
+		if (maxDepth == 0) { maxDepth = 1;}
+		return robotImage/maxDepth;
 	}
 
 protected:
@@ -302,7 +376,8 @@ protected:
 	image_geometry::PinholeCameraModel mCameraModel;
 
 	Assimp::Importer importer;
-	std::map<std::string, aiScene*> scenes;
+	MeshMap scenes;
+	MeshMap transformedScenes;
 	TransformMap transforms;
 };
 

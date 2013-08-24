@@ -39,6 +39,7 @@
 #define GEOMETRY_UTILS_H
 
 #include <deque>
+#include <vector>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
@@ -46,6 +47,13 @@
 
 namespace ap
 {
+
+typedef std::vector<Eigen::Quaternionf, Eigen::aligned_allocator<Eigen::Quaternionf> > QuaternionStdVector;
+Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
+									  std::vector<float>* weights = NULL);
+
+
+
 typedef Eigen::Vector3f Point;
 
 class Ray
@@ -125,6 +133,34 @@ public:
 
 	std::deque<Eigen::Vector3f*> vertices;
 };
+
+
+class Mesh
+{
+public:
+
+	class Face
+	{
+	public:
+		unsigned int vertices[3];
+	};
+
+	std::deque<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > vertices;
+	std::deque<Face> faces;
+};
+
+
+
+std::ostream& operator <<(std::ostream& s, Triangle tri)
+{
+	s << "Triangle: " << std::endl;
+	s << "\tA: " << tri.vertexA.transpose() << std::endl;
+	s << "\tB: " << tri.vertexB.transpose() << std::endl;
+	s << "\tC: " << tri.vertexC.transpose() << std::endl;
+	s << "\tNorm: " << tri.getNormal().transpose() << std::endl;
+	return s;
+}
+
 
 Eigen::Vector3f intersectRayPlane(Ray r, Plane p);
 Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t);

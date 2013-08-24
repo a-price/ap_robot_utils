@@ -49,7 +49,8 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Pose.h>
 #include <urdf_model/pose.h>
-#include <assimp/scene.h>
+
+#include <assimp/aiScene.h>
 
 namespace ap
 {

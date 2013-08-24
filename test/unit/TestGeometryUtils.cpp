@@ -44,6 +44,7 @@
 class TestGeometryUtils : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestGeometryUtils );
+	CPPUNIT_TEST(TestQuaternionAveraging);
 	CPPUNIT_TEST(TestRayIntersection);
 	CPPUNIT_TEST_SUITE_END();
 public:
@@ -60,6 +61,38 @@ public:
 	float randbetween(double min, double max)
 	{
 		return (max - min) * ( (double)rand() / (double)RAND_MAX ) + min;
+	}
+
+	void TestQuaternionAveraging()
+	{
+		ap::QuaternionStdVector qs;
+		std::vector<float> weights;
+		Eigen::Quaternionf resultA, resultB;
+
+		qs.push_back(Eigen::Quaternionf(1,1,0,0));
+		qs.push_back(Eigen::Quaternionf(1,0,0,1));
+		weights.push_back(1);
+		weights.push_back(1);
+
+		// Test Standard
+		resultA = ap::averageQuaternions(qs);
+		std::cerr << resultA.matrix() << std::endl << std::endl;
+
+		// Test 1's Weights
+		resultB = ap::averageQuaternions(qs, &weights);
+		std::cerr << resultB.matrix() << std::endl << std::endl;
+		CPPUNIT_ASSERT(resultA.isApprox(resultB));
+
+		// Test invalid weights default to even weights
+		weights.push_back(1);
+		resultB = ap::averageQuaternions(qs, &weights);
+		std::cerr << resultB.matrix() << std::endl << std::endl;
+		CPPUNIT_ASSERT(resultA.isApprox(resultB));
+
+		// Test legit varying weights
+		qs.push_back(Eigen::Quaternionf(1,0,1,0));
+		resultB = ap::averageQuaternions(qs, &weights);
+		std::cerr << resultB.matrix() << std::endl << std::endl;
 	}
 
 	void TestRayIntersection()
@@ -118,6 +151,9 @@ public:
 
 		std::cerr << "Expected: " << (Eigen::Vector3f::Ones() * NAN).transpose() << std::endl;
 		std::cerr << "Actual: " << actual.transpose() << std::endl;
+
+		// TODO: Test Perpendicular, nonintersecting triangle
+		//
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 	}
