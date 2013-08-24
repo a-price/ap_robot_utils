@@ -50,7 +50,7 @@ public:
 
 	virtual void setUp()
 	{
-		std::string urdf = "/home/arprice/catkin_workspace/src/drchubo/drchubo-v2/robots/drchubo-v2.urdf";
+		std::string urdf = "/home/arprice/catkin_workspace/src/drchubo/drchubo_v2/robots/drchubo_v2.urdf";
 
 		srand(time(NULL));
 	}
