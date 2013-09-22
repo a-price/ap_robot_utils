@@ -8,7 +8,7 @@ SET(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
+find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
@@ -59,7 +59,7 @@ link_libraries(${CPPUNIT_LIBRARIES})
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ap_robot_utils
-  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
+  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
   DEPENDS system_lib
 )
 

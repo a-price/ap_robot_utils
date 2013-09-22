@@ -40,6 +40,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <ap_robot_utils/geometry_utils.h>
+#include <ap_robot_utils/pointcloud_utils.h>
 
 class TestGeometryUtils : public CppUnit::TestFixture
 {
