@@ -149,6 +149,13 @@ public:
 	std::deque<Face> faces;
 };
 
+std::ostream& operator <<(std::ostream& s, Ray r)
+{
+	s << "Ray: " << std::endl;
+	s << "\tP: " << r.point.transpose() << std::endl;
+	s << "\tV: " << r.vector.transpose() << std::endl;
+	return s;
+}
 
 
 std::ostream& operator <<(std::ostream& s, Triangle tri)

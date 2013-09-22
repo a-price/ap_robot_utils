@@ -54,49 +54,64 @@
 namespace ap
 {
 
-typedef Eigen::Map<const Eigen::MatrixXf, Eigen::Aligned, Eigen::OuterStride<> > PointMapMatrix;
-
-//template <typename PointType>
-//Ray computeRotation(pcl::PointCloud<PointType>::Ptr& aCloud, pcl::PointCloud<PointType>::Ptr& bCloud)
-Ray computeRotation(pcl::PointCloud<pcl::PointXYZ>::Ptr& aCloud, pcl::PointCloud<pcl::PointXYZ>::Ptr& bCloud)
+/**
+ * @brief computeIntersection
+ * @param p
+ * @param v
+ * @return
+ *
+ * @link http://math.stackexchange.com/questions/36398/point-closest-to-a-set-four-of-lines-in-3d
+ */
+Point computeIntersection(Eigen::Matrix3Xf& p, Eigen::Matrix3Xf& v)
 {
-	// Get data as Eigen matrices
-	Eigen::MatrixXf p_a = aCloud->getMatrixXfMap(3,4,0);
-	Eigen::MatrixXf p_b = bCloud->getMatrixXfMap(3,4,0);
-
-	// Compute delta vectors and midpoints from a to b
-	Eigen::MatrixXf v = p_b - p_a;
-	Eigen::MatrixXf m = p_a + (v/2);
-
-	// Find the vector parallel to the axis of rotation (most perpendicular to the delta vectors)
-	Eigen::JacobiSVD<Eigen::MatrixXf> svd(v, Eigen::ComputeFullU);
-	Eigen::Vector3f alpha = svd.matrixU().col(2); // Eigenvector corresponding to smallest singular value
-
-	// Project points into 2D plane normal to \alpha and passing through origin
-	Eigen::MatrixXf m_proj = Eigen::MatrixXf::Constant(m.rows(), m.cols(), 0.0);
-	for (int i = 0; i < m.cols(); i++)
-	{
-		m_proj.block<3,1>(0,i) = m - (m.block<3,1>(0,i).dot(alpha)*alpha);
-	}
-
-	// Solve for the intersection of the rays perpendicular to the delta and axis vectors
-	Eigen::MatrixXf l = Eigen::MatrixXf::Constant(m.rows(), m.cols(), 0.0);
-	for (int i = 0; i < m.cols(); i++)
-	{
-		l.block<3,1>(0,i) = v.block<3,1>(0,i).cross(alpha);
-	}
-
 	Eigen::Matrix3f A = Eigen::Matrix3f::Constant(0);
 	Eigen::Vector3f b = Eigen::Vector3f::Constant(0);
-	for (int i = 0; i < m.cols(); i++)
+	Eigen::Vector3f v_i;
+	Eigen::Matrix3f projection;
+	for (int i = 0; i < p.cols(); i++)
 	{
-		Eigen::Vector3f l_i = l.block<3,1>(0,i);
-		A += Eigen::Matrix3f::Identity() - l_i*l_i.transpose();
-		b += m.block<3,1>(0,i);
+		v_i = v.col(i);
+		projection = Eigen::Matrix3f::Identity() - (v_i*v_i.transpose());
+		A += projection;
+		b += projection * p.col(i);
 	}
 
 	// Solve Ax+b=0
-	Eigen::Vector3f x = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(-b);
+	Eigen::Vector3f x = A.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
+
+	return x;
+}
+
+
+Ray computeRotation(pcl::PointCloud<pcl::PointXYZ>::Ptr& aCloud, pcl::PointCloud<pcl::PointXYZ>::Ptr& bCloud)
+{
+	// Get data as Eigen matrices
+	Eigen::Matrix3Xf p_a = aCloud->getMatrixXfMap(3,4,0);
+	Eigen::Matrix3Xf p_b = bCloud->getMatrixXfMap(3,4,0);
+
+	// Compute delta vectors and midpoints from a to b
+	Eigen::Matrix3Xf v = p_b - p_a;
+	Eigen::Matrix3Xf m = p_a + (v/2);
+
+	// Find the vector parallel to the axis of rotation (most perpendicular to the delta vectors)
+	Eigen::JacobiSVD<Eigen::Matrix3Xf> svd(v, Eigen::ComputeFullU);
+	Eigen::Vector3f alpha = svd.matrixU().col(2); // Eigenvector corresponding to smallest singular value
+
+	// Project points into 2D plane normal to \alpha and passing through origin
+	Eigen::Matrix3Xf m_proj = Eigen::Matrix3Xf::Constant(m.rows(), m.cols(), 0.0);
+	for (int i = 0; i < m.cols(); i++)
+	{
+		m_proj.col(i) = m.col(i) - (m.col(i).dot(alpha)*alpha);
+	}
+
+	// Solve for the intersection of the rays perpendicular to the delta and axis vectors
+	Eigen::Matrix3Xf l = Eigen::Matrix3Xf::Constant(m.rows(), m.cols(), 0.0);
+	for (int i = 0; i < m.cols(); i++)
+	{
+		l.col(i) = v.col(i).cross(alpha).normalized();
+	}
+
+	Eigen::Vector3f x = computeIntersection(m_proj, l);
 
 	Ray r;
 	r.point = x;

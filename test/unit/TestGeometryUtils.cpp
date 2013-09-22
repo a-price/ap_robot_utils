@@ -45,8 +45,9 @@
 class TestGeometryUtils : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestGeometryUtils );
-	CPPUNIT_TEST(TestQuaternionAveraging);
-	CPPUNIT_TEST(TestRayIntersection);
+	//CPPUNIT_TEST(TestQuaternionAveraging);
+	//CPPUNIT_TEST(TestRayIntersection);
+	CPPUNIT_TEST(TestRotationAxisRecovery);
 	CPPUNIT_TEST_SUITE_END();
 public:
 
@@ -62,6 +63,22 @@ public:
 	float randbetween(double min, double max)
 	{
 		return (max - min) * ( (double)rand() / (double)RAND_MAX ) + min;
+	}
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr eigenToPCL(const Eigen::MatrixXf& points)
+	{
+		pcl::PointCloud<pcl::PointXYZ>::Ptr retPtr(new pcl::PointCloud<pcl::PointXYZ>);
+		retPtr->width = points.cols();
+		retPtr->height = 1;
+		retPtr->points.resize(points.cols());
+		for (int i = 0; i < points.cols(); i++)
+		{
+			retPtr->points[i].x = points(0,i);
+			retPtr->points[i].y = points(1,i);
+			retPtr->points[i].z = points(2,i);
+		}
+
+		return retPtr;
 	}
 
 	void TestQuaternionAveraging()
@@ -157,6 +174,39 @@ public:
 		//
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+	}
+
+	void TestRotationAxisRecovery()
+	{
+		Eigen::Matrix3Xf p = Eigen::Matrix3f::Identity(), v = Eigen::Matrix3f::Identity();
+
+		ap::Point intersection = ap::computeIntersection(p,v);
+
+		const int height = 5;
+		const int width = 15;
+		const float squareSize = 0.015;
+		const float zOffset = 0.5;
+
+		Eigen::MatrixXf cb = Eigen::MatrixXf(4, height*width);
+		for (int r = 0; r < height; r++)
+		{
+			for (int c = 0; c < width; c++)
+			{
+				cb.col(c + (r * width)) = Eigen::Vector4f(-r * squareSize, -c * squareSize, zOffset, 1.0);
+			}
+		}
+
+		Eigen::Isometry3f rot = Eigen::Isometry3f::Identity();
+		rot.rotate(Eigen::AngleAxisf(M_PI/2, Eigen::Vector3f::UnitY()));
+
+		Eigen::MatrixXf cb_rot = rot.matrix() * cb;
+
+		pcl::PointCloud<pcl::PointXYZ>::Ptr a = eigenToPCL(cb);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr b = eigenToPCL(cb_rot);
+
+		ap::Ray result = ap::computeRotation(a, b);
+
+		std::cerr << "Result:\n" << result;
 	}
 
 };
