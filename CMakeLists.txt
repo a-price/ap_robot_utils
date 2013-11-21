@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
 set(BUILD_FLAGS "-std=c++0x -Wreturn-type")
-SET(CMAKE_BUILD_TYPE "Release")
-#SET(CMAKE_BUILD_TYPE "Debug")
+#SET(CMAKE_BUILD_TYPE "Release")
+SET(CMAKE_BUILD_TYPE "Debug")
 
 # Add additional CMake files
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
@@ -28,30 +28,6 @@ find_package(CppUnit)
 include_directories(${CPPUNIT_INCLUDE_DIR})
 link_libraries(${CPPUNIT_LIBRARIES})
 
-#######################################
-## Declare ROS messages and services ##
-#######################################
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   control_msgs#   diagnostic_msgs#   geometry_msgs#   sensor_msgs#   std_msgs#   trajectory_msgs#   visualization_msgs
-# )
-
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -72,8 +48,14 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
+file(GLOB felz_source "src/libraries/felzenszwalb/*.h")
+include_directories("src/libraries/felzenszwalb")
 ## Declare a cpp library
-add_library(${PROJECT_NAME} src/libraries/geometry_utils.cpp src/libraries/pose_conversions.cpp)
+add_library(${PROJECT_NAME}
+  src/libraries/geometry_utils.cpp
+  src/libraries/pose_conversions.cpp
+  src/libraries/image_segmentation.cpp
+  ${felz_source})
 
 ## Declare a cpp executable
 add_executable(project_robot_mesh src/project_robot_mesh.cpp)
