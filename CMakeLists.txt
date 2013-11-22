@@ -73,7 +73,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
 ## Declare a cpp library
-add_library(${PROJECT_NAME} src/libraries/geometry_utils.cpp src/libraries/pose_conversions.cpp)
+add_library(${PROJECT_NAME} src/libraries/probability_utils.cpp src/libraries/geometry_utils.cpp src/libraries/pose_conversions.cpp)
 
 ## Declare a cpp executable
 add_executable(project_robot_mesh src/project_robot_mesh.cpp)
@@ -117,6 +117,8 @@ target_link_libraries(project_robot_mesh ${PROJECT_NAME} ${catkin_LIBRARIES})
 enable_testing()
 
 # Grab all unit test files
+file(GLOB include_source "include/")
+list(SORT include_source)
 file(GLOB unit_tests_source "test/unit/*.cpp")
 list(SORT unit_tests_source)
 file(GLOB system_tests_source "test/system/*.cpp")

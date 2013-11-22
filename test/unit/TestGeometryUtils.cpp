@@ -40,12 +40,14 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <ap_robot_utils/geometry_utils.h>
+#include "ap_robot_utils/probability_utils.h"
 
 class TestGeometryUtils : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestGeometryUtils );
 	CPPUNIT_TEST(TestQuaternionAveraging);
 	CPPUNIT_TEST(TestRayIntersection);
+	CPPUNIT_TEST(TestProbabilityMath);
 	CPPUNIT_TEST_SUITE_END();
 public:
 
@@ -156,6 +158,23 @@ public:
 		//
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+	}
+
+	void TestProbabilityMath()
+	{
+//		ap::Probability a(0.1, false);
+//		ap::Probability b(0.1, false);
+
+//		CPPUNIT_ASSERT_DOUBLES_EQUAL(0.01, (a*b).getLinearProbability(), 1e-9);
+
+//		CPPUNIT_ASSERT_DOUBLES_EQUAL(0.2, (a+b).getLinearProbability(), 1e-9);
+
+//		a.setLogMode(true);
+//		b.setLogMode(true);
+
+//		CPPUNIT_ASSERT_DOUBLES_EQUAL(0.01, (a*b).getLinearProbability(), 1e-9);
+//		CPPUNIT_ASSERT_DOUBLES_EQUAL(0.01, exp((a*b).getLogProbability()), 1e-9);
+//		std::cerr << "Finished Probability Tests." << std::endl;
 	}
 
 };
