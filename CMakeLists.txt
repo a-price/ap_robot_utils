@@ -8,7 +8,7 @@ SET(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
+find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
@@ -28,30 +28,6 @@ find_package(CppUnit)
 include_directories(${CPPUNIT_INCLUDE_DIR})
 link_libraries(${CPPUNIT_LIBRARIES})
 
-#######################################
-## Declare ROS messages and services ##
-#######################################
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   control_msgs#   diagnostic_msgs#   geometry_msgs#   sensor_msgs#   std_msgs#   trajectory_msgs#   visualization_msgs
-# )
-
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -59,7 +35,7 @@ link_libraries(${CPPUNIT_LIBRARIES})
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ap_robot_utils
-  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
+  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
   DEPENDS system_lib
 )
 
@@ -72,8 +48,15 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
+file(GLOB felz_source "src/libraries/felzenszwalb/*.h")
+include_directories("src/libraries/felzenszwalb")
 ## Declare a cpp library
-add_library(${PROJECT_NAME} src/libraries/probability_utils.cpp src/libraries/geometry_utils.cpp src/libraries/pose_conversions.cpp)
+add_library(${PROJECT_NAME}
+  src/libraries/probability_utils.cpp
+  src/libraries/geometry_utils.cpp
+  src/libraries/pose_conversions.cpp
+  src/libraries/image_segmentation.cpp
+  ${felz_source})
 
 ## Declare a cpp executable
 add_executable(project_robot_mesh src/project_robot_mesh.cpp)

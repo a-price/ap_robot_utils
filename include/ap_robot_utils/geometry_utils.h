@@ -142,6 +142,14 @@ public:
 	class Face
 	{
 	public:
+		Face() {}
+		Face(int a, int b, int c)
+		{
+			vertices[0] = a;
+			vertices[1] = b;
+			vertices[2] = c;
+		}
+
 		unsigned int vertices[3];
 	};
 
@@ -149,6 +157,25 @@ public:
 	std::deque<Face> faces;
 };
 
+// Transform a mesh
+Mesh operator* (const Eigen::Isometry3f& t, const Mesh& a)
+{
+	Mesh newMesh;
+	newMesh.faces.insert(newMesh.faces.begin(), a.faces.begin(), a.faces.end());
+	for (int i = 0; i < a.vertices.size(); i++)
+	{
+		newMesh.vertices.push_back(t * a.vertices[i]);
+	}
+	return newMesh;
+}
+
+std::ostream& operator <<(std::ostream& s, Ray r)
+{
+	s << "Ray: " << std::endl;
+	s << "\tP: " << r.point.transpose() << std::endl;
+	s << "\tV: " << r.vector.transpose() << std::endl;
+	return s;
+}
 
 
 std::ostream& operator <<(std::ostream& s, Triangle tri)
