@@ -44,9 +44,10 @@
 namespace ap
 {
 
-typedef std::vector<std::vector<cv::Point2i> > Segmentation;
+typedef std::vector<cv::Point2i> Segment;
+typedef std::vector<Segment> Segmentation;
 
-void segmentFelzenszwalb(const cv::Mat& input, const float c, Segmentation &s);
+void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, unsigned int min_size);
 
 void recolorSegmentation(cv::Mat& colorIm, const Segmentation& s);
 

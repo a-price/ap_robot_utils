@@ -45,14 +45,15 @@ namespace ap
 
 static inline float diff(const cv::Mat& image, int x1, int y1, int x2, int y2)
 {
-	cv::Vec3b pxA = image.at<cv::Vec3b>(x1, y1);
-	cv::Vec3b pxB = image.at<cv::Vec3b>(x2, y2);
+	int width = image.cols;
+	cv::Vec3b pxA = image.at<cv::Vec3b>(x1 + y1 * width);
+	cv::Vec3b pxB = image.at<cv::Vec3b>(x2 + y2 * width);
 	return sqrt(square(pxA[0] - pxB[0]) +
 				square(pxA[1] - pxB[1]) +
 				square(pxA[2] - pxB[2]));
 }
 
-void segmentFelzenszwalb(const cv::Mat& input, const float c, Segmentation& s)
+void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, unsigned int min_size)
 {
 	// Grab the dimensions of the image
 	const int width = input.cols;
@@ -60,6 +61,7 @@ void segmentFelzenszwalb(const cv::Mat& input, const float c, Segmentation& s)
 
 	// Construct the graph edge array
 	edge* edges = new edge[width*height*4];
+	memset(edges, 0, sizeof(edge)*width*height*4);
 
 	// Loop through all pixels, adding edges down and to the right
 	int num = 0;
@@ -101,33 +103,50 @@ void segmentFelzenszwalb(const cv::Mat& input, const float c, Segmentation& s)
 		}
 	}
 
-//	std::cerr << "Num: " << num << std::endl;
-//	for (int i = 0; i < num; ++i)
-//	{
-//		std::cerr << edges[i].w << std::endl;
-//	}
 	// Do the actual segmentation
 	universe* u = segment_graph(width * height, num, edges, c);
 
+	// Enforce minimum size for clusters
+	for (int i = 0; i < num; i++)
+	{
+		int a = u->find(edges[i].a);
+		int b = u->find(edges[i].b);
+		if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)))
+			u->join(a, b);
+	}
+
+	// Create the segment containers
 	for (int comps = 0; comps < u->num_sets(); ++comps)
 	{
-		std::vector<cv::Point2i> temp;
+		Segment temp;
 		s.push_back(temp);
 	}
 
-	std::cerr << "components: " << u->num_sets() << std::endl;
+	std::map<int, int> componentMap;
+	int componentCount = 0;
 
-
+	// Assign all pixels to their components
 	for (int y = 0; y < height; y++)
 	{
 		for (int x = 0; x < width; x++)
 		{
 			int comp = u->find(y * width + x);
-			assert(comp < u->num_sets());
-			std::cerr << y*width + x << std::endl;
-			std::cerr << "updating component: " << comp << " With " << s[comp].size() << "elements" << std::endl;
+			int targetComponent;
 
-			s[comp].push_back(cv::Point2i(x, y));
+			std::map<int, int>::iterator iter = componentMap.find(comp);
+			if (iter == componentMap.end())
+			{
+				componentMap.insert(std::pair<int, int>(comp, componentCount));
+				targetComponent = componentCount++;
+			}
+			else
+			{
+				targetComponent = iter->second;
+			}
+
+			assert(targetComponent < u->num_sets());
+
+			s[targetComponent].push_back(cv::Point2i(x, y));
 		}
 	}
 
@@ -141,15 +160,13 @@ void recolorSegmentation(cv::Mat& colorIm, const Segmentation& s)
 	{
 		// Create a random color for this component
 		cv::Vec3b color((uchar)random(), (uchar)random(), (uchar)random());
-		std::cerr << color << std::endl;
-
-		std::cerr << "Writing component: " << comp << " With " << s[comp].size() << " elements" << std::endl;
 
 		// Assign all elements of this component to this color
 		for (int element = 0; element < s[comp].size(); ++element)
 		{
-			std::cerr << "Writing element: " << element << std::endl;
-			colorIm.at<cv::Vec3b>(s[comp][element]) = color;
+			cv::Point2i p = s[comp][element];
+			assert(p.x + (p.y * colorIm.cols) < colorIm.rows * colorIm.cols);
+			colorIm.at<cv::Vec3b>(p.x + (p.y * colorIm.cols)) = color;
 		}
 	}
 }
