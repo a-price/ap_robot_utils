@@ -145,4 +145,25 @@ Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t)
 	return result;
 }
 
+// TODO: Fix for non-convex surfaces
+float Mesh::volume() const
+{
+	int n = faces.size();
+
+	float volume = 0;
+	// Compute the signed volume of each facet to the origin
+	for (int i = 0; i < n; ++i)
+	{
+		const Eigen::Vector3f p1 = vertices[faces[i].vertices[0]];
+		const Eigen::Vector3f p2 = vertices[faces[i].vertices[1]];
+		const Eigen::Vector3f p3 = vertices[faces[i].vertices[2]];
+
+		float signedVol = (p1).dot((p2).cross(p3)) / 6.0f;
+
+		volume += fabs(signedVol);
+	}
+
+	return fabs(volume);
+}
+
 }

@@ -155,6 +155,8 @@ public:
 
 	std::deque<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > vertices;
 	std::deque<Face> faces;
+
+	float volume() const;
 };
 
 // Transform a mesh
@@ -188,6 +190,20 @@ std::ostream& operator <<(std::ostream& s, Triangle tri)
 	return s;
 }
 
+std::ostream& operator <<(std::ostream& s, Mesh r)
+{
+	s << "Points:  " << std::endl;
+	for (int i = 0; i < r.vertices.size(); ++i)
+		s << "\t" << i << ":   " << r.vertices[i].transpose() << std::endl;
+	s << "Faces:  " << std::endl;
+	for (int i = 0; i < r.faces.size(); ++i)
+	{
+		s << "\t" << i << ":  " << r.faces[i].vertices[0] << ","
+								<< r.faces[i].vertices[1] << ","
+								<< r.faces[i].vertices[2] << std::endl;
+	}
+	return s;
+}
 
 Eigen::Vector3f intersectRayPlane(Ray r, Plane p);
 Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t);
