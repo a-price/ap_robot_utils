@@ -56,7 +56,9 @@ add_library(${PROJECT_NAME}
   src/libraries/geometry_utils.cpp
   src/libraries/pose_conversions.cpp
   src/libraries/image_segmentation.cpp
+  src/libraries/SimpleCSVReader.cpp
   ${felz_source})
+set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
 
 ## Declare a cpp executable
 add_executable(project_robot_mesh src/project_robot_mesh.cpp)
