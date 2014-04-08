@@ -59,7 +59,7 @@ namespace ap
 //****************************************
 Eigen::Vector3f toEVector3(const urdf::Vector3& vector);
 
-Eigen::Isometry3f toIsometry(geometry_msgs::Pose& pose);
+Eigen::Isometry3f toIsometry(const geometry_msgs::Pose& pose);
 Eigen::Isometry3f toIsometry(tf::Transform& pose);
 
 //****************************************

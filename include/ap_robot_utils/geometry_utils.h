@@ -160,50 +160,13 @@ public:
 };
 
 // Transform a mesh
-Mesh operator* (const Eigen::Isometry3f& t, const Mesh& a)
-{
-	Mesh newMesh;
-	newMesh.faces.insert(newMesh.faces.begin(), a.faces.begin(), a.faces.end());
-	for (int i = 0; i < a.vertices.size(); i++)
-	{
-		newMesh.vertices.push_back(t * a.vertices[i]);
-	}
-	return newMesh;
-}
+Mesh operator* (const Eigen::Isometry3f& t, const Mesh& a);
 
-std::ostream& operator <<(std::ostream& s, Ray r)
-{
-	s << "Ray: " << std::endl;
-	s << "\tP: " << r.point.transpose() << std::endl;
-	s << "\tV: " << r.vector.transpose() << std::endl;
-	return s;
-}
+std::ostream& operator <<(std::ostream& s, Ray r);
 
+std::ostream& operator <<(std::ostream& s, Triangle tri);
 
-std::ostream& operator <<(std::ostream& s, Triangle tri)
-{
-	s << "Triangle: " << std::endl;
-	s << "\tA: " << tri.vertexA.transpose() << std::endl;
-	s << "\tB: " << tri.vertexB.transpose() << std::endl;
-	s << "\tC: " << tri.vertexC.transpose() << std::endl;
-	s << "\tNorm: " << tri.getNormal().transpose() << std::endl;
-	return s;
-}
-
-std::ostream& operator <<(std::ostream& s, Mesh r)
-{
-	s << "Points:  " << std::endl;
-	for (int i = 0; i < r.vertices.size(); ++i)
-		s << "\t" << i << ":   " << r.vertices[i].transpose() << std::endl;
-	s << "Faces:  " << std::endl;
-	for (int i = 0; i < r.faces.size(); ++i)
-	{
-		s << "\t" << i << ":  " << r.faces[i].vertices[0] << ","
-								<< r.faces[i].vertices[1] << ","
-								<< r.faces[i].vertices[2] << std::endl;
-	}
-	return s;
-}
+std::ostream& operator <<(std::ostream& s, Mesh r);
 
 Eigen::Vector3f intersectRayPlane(Ray r, Plane p);
 Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t);

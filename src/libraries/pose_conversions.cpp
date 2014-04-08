@@ -48,7 +48,7 @@ Eigen::Vector3f toEVector3(const urdf::Vector3 &vector)
 	return newVector;
 }
 
-Eigen::Isometry3f toIsometry(geometry_msgs::Pose& pose)
+Eigen::Isometry3f toIsometry(const geometry_msgs::Pose& pose)
 {
 	Eigen::Isometry3f result = Eigen::Isometry3f::Identity();
 	Eigen::Vector3f trans(pose.position.x,pose.position.y,pose.position.z);
