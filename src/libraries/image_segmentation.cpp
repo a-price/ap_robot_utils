@@ -43,7 +43,8 @@
 namespace ap
 {
 
-static inline float diff(const cv::Mat& image, int x1, int y1, int x2, int y2)
+
+float diffSTD(const cv::Mat& image, int x1, int y1, int x2, int y2)
 {
 	int width = image.cols;
 	cv::Vec3b pxA = image.at<cv::Vec3b>(x1 + y1 * width);
@@ -53,7 +54,18 @@ static inline float diff(const cv::Mat& image, int x1, int y1, int x2, int y2)
 				square(pxA[2] - pxB[2]));
 }
 
-void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, unsigned int min_size)
+float diffHSV(const cv::Mat& image, int x1, int y1, int x2, int y2)
+{
+	int width = image.cols;
+	cv::Vec3b pxA = image.at<cv::Vec3b>(x1 + y1 * width);
+	cv::Vec3b pxB = image.at<cv::Vec3b>(x2 + y2 * width);
+	return sqrt(square(pxA[0] - pxB[0]) +
+				fabs(pxA[1] - pxB[1]) +
+				fabs(pxA[2] - pxB[2]));
+}
+
+
+void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, unsigned int min_size, DifferenceFunction diff )
 {
 	// Grab the dimensions of the image
 	const int width = input.cols;
@@ -73,7 +85,7 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 			{
 				edges[num].a = y * width + x;
 				edges[num].b = y * width + (x+1);
-				edges[num].w = diff(input, x, y, x+1, y);
+				edges[num].w = (*diff)(input, x, y, x+1, y);
 				++num;
 			}
 
@@ -81,7 +93,7 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 			{
 				edges[num].a = y * width + x;
 				edges[num].b = (y+1) * width + x;
-				edges[num].w = diff(input, x, y, x, y+1);
+				edges[num].w = (*diff)(input, x, y, x, y+1);
 				++num;
 			}
 
@@ -89,7 +101,7 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 			{
 				edges[num].a = y * width + x;
 				edges[num].b = (y+1) * width + (x+1);
-				edges[num].w = diff(input, x, y, x+1, y+1);
+				edges[num].w = (*diff)(input, x, y, x+1, y+1);
 				++num;
 			}
 
@@ -97,7 +109,7 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 			{
 				edges[num].a = y * width + x;
 				edges[num].b = (y-1) * width + (x+1);
-				edges[num].w = diff(input, x, y, x+1, y-1);
+				edges[num].w = (*diff)(input, x, y, x+1, y-1);
 				++num;
 			}
 		}
@@ -116,6 +128,7 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 	}
 
 	// Create the segment containers
+	s.clear();
 	for (int comps = 0; comps < u->num_sets(); ++comps)
 	{
 		Segment temp;
@@ -154,21 +167,41 @@ void segmentFelzenszwalb(const cv::Mat& input, Segmentation& s, const float c, u
 	delete u;
 }
 
-void recolorSegmentation(cv::Mat& colorIm, const Segmentation& s)
+void recolorSegmentation(const cv::Mat& colorIm, cv::Mat& recolorIm, const Segmentation &s, bool useAverageColor)
 {
+	assert(colorIm.data != recolorIm.data);
+
+	recolorIm = cv::Mat(colorIm.rows, colorIm.cols, colorIm.type());
+
 	for (int comp = 0; comp < s.size(); ++comp)
 	{
-		// Create a random color for this component
-		cv::Vec3b color((uchar)random(), (uchar)random(), (uchar)random());
+		cv::Vec3b color;
+		if (useAverageColor)
+		{
+			cv::Vec3f tempColor = cv::Vec3f(0,0,0);
+			for (int element = 0; element < s[comp].size(); ++element)
+			{
+				cv::Point2i p = s[comp][element];
+				assert(p.x + (p.y * colorIm.cols) < colorIm.rows * colorIm.cols);
+				tempColor += colorIm.at<cv::Vec3b>(p);
+			}
+			color = tempColor / (float)s[comp].size();
+		}
+		else
+		{
+			// Create a random color for this component
+			color = cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random());
+		}
 
 		// Assign all elements of this component to this color
 		for (int element = 0; element < s[comp].size(); ++element)
 		{
 			cv::Point2i p = s[comp][element];
 			assert(p.x + (p.y * colorIm.cols) < colorIm.rows * colorIm.cols);
-			colorIm.at<cv::Vec3b>(p.x + (p.y * colorIm.cols)) = color;
+			recolorIm.at<cv::Vec3b>(p) = color;
 		}
 	}
 }
+
 
 }

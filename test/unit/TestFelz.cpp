@@ -64,15 +64,20 @@ public:
 
 	void TestImageSegmentation()
 	{
-		cv::Mat imgRead = cv::imread("/home/arprice/Desktop/cat.jpg");
+		cv::Mat imgRead = cv::imread("/home/arprice/Desktop/platypus.jpg");
+		if (imgRead.rows * imgRead.cols > 200000)
+		{
+			cv::resize(imgRead, imgRead,  cv::Size(imgRead.cols / 2, imgRead.rows / 2));
+		}
 //		cv::resize(imgRead, imgRead, cv::Size(640, 480));
 
-		cv::namedWindow("Hello", cv::WINDOW_NORMAL);
-		cv::imshow("Hello", imgRead);
+		cv::namedWindow("Original", cv::WINDOW_NORMAL);
+		cv::imshow("Original", imgRead);
 		cv::waitKey();
 
 		cv::Mat img;
-		int neighborhood = 1 + std::min(imgRead.rows, imgRead.cols) / 100;
+		int neighborhood = std::min(imgRead.rows, imgRead.cols) / 100;
+		if (neighborhood % 2 == 0) {neighborhood += 1;} // Only odd sized neighborhoods
 		int bilat = 50;
 		cv::bilateralFilter(imgRead, img, -1, bilat, neighborhood);
 		cv::medianBlur(img, img, neighborhood);
@@ -99,17 +104,31 @@ public:
 //		img.at<cv::Vec3b>(2,1) = cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random());
 //		img.at<cv::Vec3b>(2,2) = cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random());
 
-		cv::namedWindow("Hello", cv::WINDOW_NORMAL);
-		cv::imshow("Hello", img);
+
+		cv::imshow("Original", img);
 		cv::waitKey();
+
+		cv::namedWindow("Final", cv::WINDOW_NORMAL);
+		cv::namedWindow("FinalHSV", cv::WINDOW_NORMAL);
+
+		cv::Mat display, displayHSV;
 
 		ap::Segmentation s;
-		ap::segmentFelzenszwalb(img, s, 2000, (img.rows * img.cols) / 50);
+		for (int i = 10; i < 6000; i *= 5)
+		{
+			cv::Mat imgHSV;
+			cv::cvtColor(img, imgHSV, CV_BGR2HSV);
 
-		ap::recolorSegmentation(img, s);
+			ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffSTD);
+			ap::recolorSegmentation(img, display, s, true);
 
-		cv::imshow("Hello", img);
-		cv::waitKey();
+			ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffHSV);
+			ap::recolorSegmentation(img, displayHSV, s, true);
+
+			cv::imshow("Final", display);
+			cv::imshow("FinalHSV", displayHSV);
+			cv::waitKey();
+		}
 	}
 
 };
