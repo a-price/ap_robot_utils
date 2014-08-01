@@ -51,10 +51,10 @@
 #include <urdf/model.h>
 #include <resource_retriever/retriever.h>
 
-#include <assimp/aiMesh.h>
-#include <assimp/aiScene.h>
-#include <assimp/aiPostProcess.h>
-#include <assimp/assimp.hpp>
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/cimport.h>
 
 #include <ap_robot_utils/geometry_utils.h>
 #include <ap_robot_utils/pose_conversions.h>
@@ -210,20 +210,20 @@ public:
 				continue;
 			}
 
-			const aiScene* scene = importer.ReadFileFromMemory(resource.data.get(), resource.size,
-															   aiProcess_ValidateDataStructure |
-															   aiProcess_JoinIdenticalVertices |
-															   aiProcess_ImproveCacheLocality |
-															   aiProcess_Triangulate |
-															   aiProcess_OptimizeGraph |
-															   aiProcess_OptimizeMeshes |
-															   aiProcess_FindDegenerates |
-															   aiProcess_SortByPType,
-															   ".stl");
+			const aiScene* scene = aiImportFileFromMemory((char*)resource.data.get(), resource.size,
+														  aiProcess_ValidateDataStructure |
+														  aiProcess_JoinIdenticalVertices |
+														  aiProcess_ImproveCacheLocality |
+														  aiProcess_Triangulate |
+														  aiProcess_OptimizeGraph |
+														  aiProcess_OptimizeMeshes |
+														  aiProcess_FindDegenerates |
+														  aiProcess_SortByPType,
+														  ".stl");
 
 			if (scene == NULL)
 			{
-				std::cerr << importer.GetErrorString() << std::endl;
+//				std::cerr << importer.GetErrorString() << std::endl;
 				continue;
 			}
 
@@ -375,7 +375,7 @@ protected:
 
 	image_geometry::PinholeCameraModel mCameraModel;
 
-	Assimp::Importer importer;
+//	Assimp::Importer importer;
 	MeshMap scenes;
 	MeshMap transformedScenes;
 	TransformMap transforms;

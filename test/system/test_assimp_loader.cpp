@@ -51,15 +51,15 @@
 #include <urdf/model.h>
 #include <resource_retriever/retriever.h>
 
-#include <assimp/aiMesh.h>
-#include <assimp/aiScene.h>
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
 
-#include <assimp/assimp.hpp>
+#include <assimp/cimport.h>
 #ifdef AI_CONFIG_PP_SBP_REMOVE
 #undef AI_CONFIG_PP_SBP_REMOVE
 #endif
 #define AI_CONFIG_PP_SBP_REMOVE aiPrimitiveType_POINT | aiPrimitiveType_LINE
-#include <assimp/aiPostProcess.h>
+#include <assimp/postprocess.h>
 
 #include <ap_robot_utils/geometry_utils.h>
 #include <ap_robot_utils/pose_conversions.h>
@@ -261,17 +261,17 @@ cv::Mat projectWithEigen()
 
 void init()
 {
-	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile("/home/arprice/catkin_workspace/src/ap_robot_utils/test/resources/cube.stla",
-											 aiProcess_ValidateDataStructure |
-											 aiProcess_JoinIdenticalVertices |
-											 aiProcess_ImproveCacheLocality |
-											 aiProcess_Triangulate |
-											 aiProcess_OptimizeGraph |
-											 aiProcess_OptimizeMeshes |
-											 aiProcess_FindDegenerates |
-											 aiProcess_SortByPType);
-	std::cerr << importer.GetErrorString() << std::endl;
+	//	Assimp::Importer importer;
+	const aiScene* scene = aiImportFile("/home/arprice/catkin_workspace/src/ap_robot_utils/test/resources/cube.stla",
+										aiProcess_ValidateDataStructure |
+										aiProcess_JoinIdenticalVertices |
+										aiProcess_ImproveCacheLocality |
+										aiProcess_Triangulate |
+										aiProcess_OptimizeGraph |
+										aiProcess_OptimizeMeshes |
+										aiProcess_FindDegenerates |
+										aiProcess_SortByPType);
+//	std::cerr << importer.GetErrorString() << std::endl;
 	if (scene == NULL) { return; }
 
 	scenes.insert(MeshMap::value_type("cube", meshAItoAP(scene)));

@@ -50,7 +50,7 @@
 #include <geometry_msgs/Pose.h>
 #include <urdf_model/pose.h>
 
-#include <assimp/aiScene.h>
+#include <assimp/scene.h>
 
 namespace ap
 {
