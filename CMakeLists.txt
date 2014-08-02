@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
 set(BUILD_FLAGS "-std=c++0x -Wreturn-type")
-SET(CMAKE_BUILD_TYPE "Release")
-#SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_BUILD_TYPE "Debug")
+#SET(CMAKE_BUILD_TYPE "Release")
 
 # Add additional CMake files
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
@@ -48,6 +48,8 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
+file(GLOB headers "include/ap_robot_utils/*.h")
+
 file(GLOB felz_source "src/libraries/felzenszwalb/*.h")
 include_directories("src/libraries/felzenszwalb")
 ## Declare a cpp library
@@ -57,6 +59,7 @@ add_library(${PROJECT_NAME}
   src/libraries/pose_conversions.cpp
   src/libraries/image_segmentation.cpp
   src/libraries/SimpleCSVReader.cpp
+  ${headers}
   ${felz_source})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
 

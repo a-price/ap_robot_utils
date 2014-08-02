@@ -44,6 +44,7 @@ class TestOctree : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestOctree );
 	CPPUNIT_TEST(TestOctreeSearch);
+	CPPUNIT_TEST(TestDrillDown);
 	CPPUNIT_TEST_SUITE_END();
 public:
 
@@ -53,16 +54,29 @@ public:
 
 	void TestOctreeSearch()
 	{
-		ap::Octree::Octree ot;
-		ot.expand(3);
+		std::shared_ptr<ap::Octree::Octree> ot(new ap::Octree::Octree);
+		ot->expand(3);
 		Eigen::Vector3f query(0.5, 0.1, -0.8);
-		std::shared_ptr<ap::Octree::Element> target = ot.search(query);
+		std::shared_ptr<ap::Octree::Element> target = ot->search(query);
 		CPPUNIT_ASSERT_EQUAL(Eigen::Vector3f(0.4375, 0.0625, -0.4375), target->mCenter);
 		CPPUNIT_ASSERT(!target->mHasChildren);
 
 		query = Eigen::Vector3f(0.2, 0.1, -0.3);
-		target = ot.search(query);
+		target = ot->search(query);
 		std::cout << target->mCenter << "\n" << target->mHasChildren << std::endl;
+	}
+
+	void TestDrillDown()
+	{
+		std::shared_ptr<ap::Octree::Octree> ot(new ap::Octree::Octree);
+		Eigen::Vector3f query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
+		std::shared_ptr<ap::Octree::Element> res = ot->search(query, 0, true);
+		CPPUNIT_ASSERT(ot->mTree == res); // Root node is tree
+		CPPUNIT_ASSERT(!ot->mTree->mHasChildren);
+
+		res = ot->search(query, 3, true);
+		CPPUNIT_ASSERT(ot->mTree->mHasChildren);
+		CPPUNIT_ASSERT(res->mParent->mHasChildren);
 	}
 
 };

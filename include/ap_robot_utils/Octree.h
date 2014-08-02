@@ -55,14 +55,15 @@ typedef void T;
 class Element
 {
 public:
+	friend class Octree;
+
 	Eigen::Vector3f mCenter;
 	float mCubeDiameter;
 	std::shared_ptr<T> mData;
-	Element* mParent;
 	bool mHasChildren;
 
 	Element(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
-			Element* parent = NULL,
+			std::shared_ptr<Element> parent = std::shared_ptr<Element>(),
 			std::shared_ptr<T> data = nullptr);
 
 	/**
@@ -75,13 +76,37 @@ public:
 	 * @brief Returns the smallest containing element for the query point
 	 * @param query Point for which to find smallest containing element
 	 */
-	std::shared_ptr<Element> search(Eigen::Vector3f& queryPt);
+	std::shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
 
-protected:
+//protected:
 	std::shared_ptr<Element> mChildren[8];
+	std::shared_ptr<Element> mSelf;
+	std::shared_ptr<Element> mParent;
 };
 
-typedef Element Octree;
+//template <class T>
+class Octree
+{
+public:
+	Octree(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
+		   std::shared_ptr<T> data = nullptr) // Create root element and smart pointer to it
+	{
+		mTree = std::shared_ptr<Element>(new Element(center, width, NULL, data));
+		mTree->mSelf = mTree;
+	}
+
+	void expand(unsigned int levels = 1)
+	{
+		mTree->expand(levels);
+	}
+
+	std::shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	{
+		return mTree->search(queryPt, maxLevel, drillDownToDepth);
+	}
+
+	std::shared_ptr<Element> mTree;
+};
 
 
 //////////////////////////////////////////////
@@ -90,7 +115,7 @@ typedef Element Octree;
 
 //template <class T>
 Element::Element(const Eigen::Vector3f& center, const float width,
-				 Element* parent,
+				 std::shared_ptr<Element> parent,
 				 std::shared_ptr<T> data)
 {
 	mCenter = center;
@@ -118,7 +143,8 @@ void Element::expand(unsigned int levels)
 			Eigen::Vector3f childCenter(mCenter[0] + ((i < 4) ? newRadius : -newRadius ),
 										mCenter[1] + (((i % 4) < 2) ? newRadius : -newRadius ),
 										mCenter[2] + (((i % 2) == 0) ? newRadius : -newRadius ));
-			mChildren[i] = std::shared_ptr<Element>(new Element(childCenter, newWidth, this));
+			mChildren[i] = std::shared_ptr<Element>(new Element(childCenter, newWidth, mSelf));
+			mChildren[i]->mSelf = mChildren[i];
 			if (levels > 1)
 			{
 				mChildren[i]->expand(levels - 1);
@@ -128,8 +154,34 @@ void Element::expand(unsigned int levels)
 }
 
 //template <class T>
-std::shared_ptr<Element> Element::search(Eigen::Vector3f& queryPt)
+std::shared_ptr<Element> Element::search(Eigen::Vector3f& queryPt, const int maxLevel, const bool drillDownToDepth)
 {
+	assert(!(maxLevel < 0 && drillDownToDepth)); // This pair will drill down forever
+	// Check for maxDepth
+	int levelsRemaining = -1; // Defaults to unlimited levels
+	if (maxLevel == 0)
+	{
+		return mSelf; // Found current level
+	}
+	else if(maxLevel > 0)
+	{
+		levelsRemaining = maxLevel - 1; // Decrement remaining depth
+	}
+
+	// Check for children
+	if (!this->mHasChildren)
+	{
+		if (drillDownToDepth)
+		{
+			this->expand(1);
+		}
+		else
+		{
+			// Function has bottomed out
+			return mSelf;
+		}
+	}
+
 	// TODO: You can do this with only 3 comparisons
 	// Find closest child
 	float minD = std::numeric_limits<float>::max();
@@ -144,14 +196,7 @@ std::shared_ptr<Element> Element::search(Eigen::Vector3f& queryPt)
 		}
 	}
 
-	if (mChildren[nearestIndex]->mHasChildren)
-	{
-		return mChildren[nearestIndex]->search(queryPt);
-	}
-	else
-	{
-		return mChildren[nearestIndex];
-	}
+	return mChildren[nearestIndex]->search(queryPt, levelsRemaining, drillDownToDepth);
 }
 
 
