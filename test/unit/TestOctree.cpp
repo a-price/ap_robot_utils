@@ -45,6 +45,7 @@ class TestOctree : public CppUnit::TestFixture
 	CPPUNIT_TEST_SUITE( TestOctree );
 	CPPUNIT_TEST(TestOctreeSearch);
 	CPPUNIT_TEST(TestDrillDown);
+	CPPUNIT_TEST(TestLeafIteration);
 	CPPUNIT_TEST_SUITE_END();
 public:
 
@@ -54,10 +55,10 @@ public:
 
 	void TestOctreeSearch()
 	{
-		std::shared_ptr<ap::Octree::Octree> ot(new ap::Octree::Octree);
+		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
 		ot->expand(3);
 		Eigen::Vector3f query(0.5, 0.1, -0.8);
-		std::shared_ptr<ap::Octree::Element> target = ot->search(query);
+		ap::shared_ptr<ap::Octree::Element<float> > target = ot->search(query);
 		CPPUNIT_ASSERT_EQUAL(Eigen::Vector3f(0.4375, 0.0625, -0.4375), target->mCenter);
 		CPPUNIT_ASSERT(!target->mHasChildren);
 
@@ -68,15 +69,39 @@ public:
 
 	void TestDrillDown()
 	{
-		std::shared_ptr<ap::Octree::Octree> ot(new ap::Octree::Octree);
+		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
 		Eigen::Vector3f query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
-		std::shared_ptr<ap::Octree::Element> res = ot->search(query, 0, true);
+		ap::shared_ptr<ap::Octree::Element<float> > res = ot->search(query, 0, true);
 		CPPUNIT_ASSERT(ot->mTree == res); // Root node is tree
 		CPPUNIT_ASSERT(!ot->mTree->mHasChildren);
 
 		res = ot->search(query, 3, true);
 		CPPUNIT_ASSERT(ot->mTree->mHasChildren);
 		CPPUNIT_ASSERT(res->mParent->mHasChildren);
+	}
+
+	void TestLeafIteration()
+	{
+		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
+		ot->expand(2);
+		Eigen::Vector3f query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
+		ap::shared_ptr<ap::Octree::Element<float> > res = ot->search(query, 3, true);
+		ap::shared_ptr<ap::Octree::Element<float> > leaf = ot->mTree->nextLeaf();
+		leaf = leaf->nextLeaf();
+		CPPUNIT_ASSERT(leaf->mChildIndexOfParent == 1);
+		int safetyIters = 200;
+		while(safetyIters-- > 0)
+		{
+			leaf->printPath();
+			res = leaf->nextLeaf();
+			// Check for end of line;
+			if (ap::shared_ptr<ap::Octree::Element<float> >() == res)
+			{
+				break;
+			}
+			leaf = res;
+		}
+		CPPUNIT_ASSERT(safetyIters > 0); // check for possible endless loop
 	}
 
 };

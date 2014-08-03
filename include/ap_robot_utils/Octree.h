@@ -41,30 +41,40 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#ifdef USE_CPP_11
 #include <memory>
-//#include <boost/shared_ptr.hpp>
+#else
+#include <boost/shared_ptr.hpp>
+#endif // USE_CPP_11
 
 namespace ap
 {
 
+#ifdef USE_CPP_11
+using namespace std;
+#else
+using namespace boost;
+#endif // USE_CPP_11
+
 namespace Octree
 {
 
-typedef void T;
-//template <class T>
+//typedef float T;
+template <class T>
 class Element
 {
 public:
-	friend class Octree;
+//	friend class Octree<T>;
 
 	Eigen::Vector3f mCenter;
 	float mCubeDiameter;
-	std::shared_ptr<T> mData;
+	shared_ptr<T> mData;
 	bool mHasChildren;
+	int mChildIndexOfParent;
 
 	Element(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
-			std::shared_ptr<Element> parent = std::shared_ptr<Element>(),
-			std::shared_ptr<T> data = nullptr);
+			shared_ptr<Element> parent = shared_ptr<Element>(),
+			shared_ptr<T> data = nullptr);
 
 	/**
 	 * @brief Expand this leaf into a branch with 8 children
@@ -76,22 +86,25 @@ public:
 	 * @brief Returns the smallest containing element for the query point
 	 * @param query Point for which to find smallest containing element
 	 */
-	std::shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+	shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+
+	shared_ptr<Element> nextLeaf(const int startChild = 0);
+	void printPath();
 
 //protected:
-	std::shared_ptr<Element> mChildren[8];
-	std::shared_ptr<Element> mSelf;
-	std::shared_ptr<Element> mParent;
+	shared_ptr<Element> mChildren[8];
+	shared_ptr<Element> mSelf;
+	shared_ptr<Element> mParent;
 };
 
-//template <class T>
+template <class T>
 class Octree
 {
 public:
 	Octree(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
-		   std::shared_ptr<T> data = nullptr) // Create root element and smart pointer to it
+		   shared_ptr<T> data = nullptr) // Create root element and smart pointer to it
 	{
-		mTree = std::shared_ptr<Element>(new Element(center, width, NULL, data));
+		mTree = shared_ptr<Element<T> >(new Element<T> (center, width, NULL, data));
 		mTree->mSelf = mTree;
 	}
 
@@ -100,12 +113,12 @@ public:
 		mTree->expand(levels);
 	}
 
-	std::shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	shared_ptr<Element<T> > search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
 	{
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
 	}
 
-	std::shared_ptr<Element> mTree;
+	shared_ptr<Element<T> > mTree;
 };
 
 
@@ -113,25 +126,26 @@ public:
 /////////////// Implementation ///////////////
 //////////////////////////////////////////////
 
-//template <class T>
-Element::Element(const Eigen::Vector3f& center, const float width,
-				 std::shared_ptr<Element> parent,
-				 std::shared_ptr<T> data)
+template <class T>
+Element<T>::Element(const Eigen::Vector3f& center, const float width,
+				 shared_ptr<Element> parent,
+				 shared_ptr<T> data)
 {
 	mCenter = center;
 	mCubeDiameter = width;
 	mParent = parent;
 	mData = data;
 	mHasChildren = false;
+	mChildIndexOfParent = 0;
 
 	for (int i = 0; i < 8; ++i)
 	{
-		mChildren[i] = std::shared_ptr<Element>();
+		mChildren[i] = shared_ptr<Element>();
 	}
 }
 
-//template <class T>
-void Element::expand(unsigned int levels)
+template <class T>
+void Element<T>::expand(unsigned int levels)
 {
 	if (levels > 0)
 	{
@@ -143,8 +157,9 @@ void Element::expand(unsigned int levels)
 			Eigen::Vector3f childCenter(mCenter[0] + ((i < 4) ? newRadius : -newRadius ),
 										mCenter[1] + (((i % 4) < 2) ? newRadius : -newRadius ),
 										mCenter[2] + (((i % 2) == 0) ? newRadius : -newRadius ));
-			mChildren[i] = std::shared_ptr<Element>(new Element(childCenter, newWidth, mSelf));
+			mChildren[i] = shared_ptr<Element<T> >(new Element<T>(childCenter, newWidth, mSelf));
 			mChildren[i]->mSelf = mChildren[i];
+			mChildren[i]->mChildIndexOfParent = i;
 			if (levels > 1)
 			{
 				mChildren[i]->expand(levels - 1);
@@ -153,8 +168,8 @@ void Element::expand(unsigned int levels)
 	}
 }
 
-//template <class T>
-std::shared_ptr<Element> Element::search(Eigen::Vector3f& queryPt, const int maxLevel, const bool drillDownToDepth)
+template <class T>
+shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3f& queryPt, const int maxLevel, const bool drillDownToDepth)
 {
 	assert(!(maxLevel < 0 && drillDownToDepth)); // This pair will drill down forever
 	// Check for maxDepth
@@ -197,6 +212,49 @@ std::shared_ptr<Element> Element::search(Eigen::Vector3f& queryPt, const int max
 	}
 
 	return mChildren[nearestIndex]->search(queryPt, levelsRemaining, drillDownToDepth);
+}
+
+template <class T>
+shared_ptr<Element<T> > Element<T>::nextLeaf(const int startChild)
+{
+	assert(startChild <= 8);
+	if (!mHasChildren || startChild == 8)
+	{
+		if (shared_ptr<Element<T> >() != mParent)
+		{
+			return mParent->nextLeaf(mChildIndexOfParent + 1);
+		}
+		else
+		{
+			return shared_ptr<Element<T> >();
+		}
+	}
+	else
+	{
+		if (!mChildren[startChild]->mHasChildren)
+		{
+			return mChildren[startChild];
+		}
+		else
+		{
+			return mChildren[startChild]->nextLeaf(0);
+		}
+	}
+}
+
+template <class T>
+void Element<T>::printPath()
+{
+	std::cout << mChildIndexOfParent;
+	if (shared_ptr<Element<T> >() != mParent)
+	{
+		std::cout << " <- ";
+		mParent->printPath();
+	}
+	else
+	{
+		std::cout << std::endl;
+	}
 }
 
 
