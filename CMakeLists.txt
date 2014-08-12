@@ -8,16 +8,36 @@ SET(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever)
+find_package(catkin REQUIRED COMPONENTS
+  control_msgs
+  cv_bridge
+  diagnostic_msgs
+  geometry_msgs
+  image_geometry
+  image_transport
+  pcl_ros
+  roscpp
+  sensor_msgs
+  std_msgs
+  tf
+  trajectory_msgs
+  urdf
+  visualization_msgs
+  resource_retriever
+)
+if ($ENV{ROS_DISTRO} STREQUAL "indigo")
+  find_package(cmake_modules REQUIRED)
+endif ($ENV{ROS_DISTRO} STREQUAL "indigo")
+
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIR})
 link_libraries(${OpenCV_LIBS})
 
-find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIRS})
-add_definitions(${EIGEN3_DEFINITIONS})
+find_package(Eigen REQUIRED)
+include_directories(${EIGEN_INCLUDE_DIRS})
+add_definitions(${EIGEN_DEFINITIONS})
 
 # /usr/local/lib/cmake/assimp-3.0/
 find_package(ASSIMP REQUIRED)
