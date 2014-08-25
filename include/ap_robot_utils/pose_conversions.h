@@ -44,6 +44,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+//#include <Eigen/src/Core/Block.h>
 
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
@@ -73,6 +74,18 @@ tf::Transform toTF(Eigen::Transform<Derived, 3, Eigen::Isometry>& pose)
 	tf::Transform t;
 	Eigen::Matrix<Derived, 3, 1> eTrans = pose.translation();
 	Eigen::Quaternion<Derived> eQuat(pose.rotation());
+	t.setOrigin(tf::Vector3(eTrans.x(), eTrans.y(),eTrans.z()));
+	t.setRotation(tf::Quaternion(eQuat.x(), eQuat.y(), eQuat.z(), eQuat.w()));
+	return t;
+}
+
+template <typename Derived>
+tf::Transform toTF(const Eigen::Matrix<Derived, 4, 4>& pose)
+{
+	tf::Transform t;
+	const Eigen::Matrix<Derived, 3, 1> eTrans = pose.topRightCorner(3, 1);
+	const Eigen::Matrix<Derived, 3, 3> eRot = pose.topLeftCorner(3, 3);
+	const Eigen::Quaternion<Derived> eQuat(eRot);
 	t.setOrigin(tf::Vector3(eTrans.x(), eTrans.y(),eTrans.z()));
 	t.setRotation(tf::Quaternion(eQuat.x(), eQuat.y(), eQuat.z(), eQuat.w()));
 	return t;

@@ -79,6 +79,7 @@ add_library(${PROJECT_NAME}
   src/libraries/pose_conversions.cpp
   src/libraries/image_segmentation.cpp
   src/libraries/SimpleCSVReader.cpp
+  src/libraries/DHParams.cpp
   ${headers}
   ${felz_source})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
