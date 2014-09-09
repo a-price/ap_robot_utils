@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
 set(BUILD_FLAGS "-std=c++0x -Wreturn-type")
-SET(CMAKE_BUILD_TYPE "Debug")
-#SET(CMAKE_BUILD_TYPE "Release")
+#SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_BUILD_TYPE "Release")
 
 # Add additional CMake files
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
@@ -54,7 +54,7 @@ link_libraries(${CPPUNIT_LIBRARIES})
 ## Declare things to be passed to dependent projects
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ap_robot_utils
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
   DEPENDS system_lib
 )
@@ -68,7 +68,7 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
-file(GLOB headers "include/ap_robot_utils/*.h")
+file(GLOB headers "include/${PROJECT_NAME}/*.h")
 
 file(GLOB felz_source "src/libraries/felzenszwalb/*.h")
 include_directories("src/libraries/felzenszwalb")
@@ -76,6 +76,7 @@ include_directories("src/libraries/felzenszwalb")
 add_library(${PROJECT_NAME}
   src/libraries/probability_utils.cpp
   src/libraries/geometry_utils.cpp
+  src/libraries/ros_utils.cpp
   src/libraries/pose_conversions.cpp
   src/libraries/image_segmentation.cpp
   src/libraries/SimpleCSVReader.cpp
