@@ -61,7 +61,7 @@ Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
 									  std::vector<float>* weights)
 {
 	Eigen::Matrix4f accumulator = Eigen::Matrix4f::Zero();
-	int n = qs.size();
+	const int n = qs.size();
 	Eigen::Vector4f qVec;
 
 	for (int i = 0; i < n; i++)
