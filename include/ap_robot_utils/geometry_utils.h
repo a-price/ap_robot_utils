@@ -40,48 +40,48 @@
 
 #include <deque>
 #include <vector>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+
+#include "ap_robot_utils/eigen_definitions.h"
 
 #include <iostream>
 
 namespace ap
 {
 
-typedef std::vector<Eigen::Quaternionf, Eigen::aligned_allocator<Eigen::Quaternionf> > QuaternionStdVector;
-Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
+typedef std::vector<Eigen::Quaternion<ap::decimal>, Eigen::aligned_allocator<Eigen::Quaternion<ap::decimal> > > QuaternionStdVector;
+Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 									  std::vector<float>* weights = NULL);
 
 
 
-typedef Eigen::Vector3f Point;
+typedef Eigen::Vector3 Point;
 
 class Ray
 {
 public:
-	Eigen::Vector3f point;
-	Eigen::Vector3f vector;
+	Eigen::Vector3 point;
+	Eigen::Vector3 vector;
 };
 
 class Plane
 {
 public:
-	Plane(Eigen::Vector3f& n, Eigen::Vector3f& p)
+	Plane(Eigen::Vector3& n, Eigen::Vector3& p)
 		: normal(n.normalized()),
 		  point(p)
 	{
 		distance = normal.dot(point);
 	}
 
-	Plane(Eigen::Vector3f& n, float d)
+	Plane(Eigen::Vector3& n, float d)
 		: normal(n.normalized()),
 		  distance(d)
 	{
 		point = normal * distance;
 	}
 
-	Eigen::Vector3f point;
-	Eigen::Vector3f normal;
+	Eigen::Vector3 point;
+	Eigen::Vector3 normal;
 	float distance;
 };
 
@@ -95,7 +95,7 @@ public:
 		vertices.push_back(&(this->vertexC));
 	}
 
-	Triangle(const Eigen::Vector3f& a, const Eigen::Vector3f& b, const Eigen::Vector3f& c)
+	Triangle(const Eigen::Vector3& a, const Eigen::Vector3& b, const Eigen::Vector3& c)
 		: vertexA(a),
 		  vertexB(b),
 		  vertexC(c)
@@ -105,11 +105,11 @@ public:
 		vertices.push_back(&(this->vertexC));
 	}
 
-	Eigen::Vector3f getNormal()
+	Eigen::Vector3 getNormal()
 	{
-		Eigen::Vector3f ab = vertexA - vertexB;
-		Eigen::Vector3f ac = vertexA - vertexC;
-		Eigen::Vector3f retVal = ab.cross(ac).normalized();
+		Eigen::Vector3 ab = vertexA - vertexB;
+		Eigen::Vector3 ac = vertexA - vertexC;
+		Eigen::Vector3 retVal = ab.cross(ac).normalized();
 		if (!std::isfinite(retVal.x()))
 		{
 			std::cerr << "Error, NaN detected in output. Possible collinear vertices: " << std::endl <<
@@ -122,16 +122,16 @@ public:
 
 	Plane getPlane()
 	{
-		Eigen::Vector3f normal = getNormal();
+		Eigen::Vector3 normal = getNormal();
 		Plane p(normal, vertexA);
 		return p;
 	}
 
-	Eigen::Vector3f vertexA;
-	Eigen::Vector3f vertexB;
-	Eigen::Vector3f vertexC;
+	Eigen::Vector3 vertexA;
+	Eigen::Vector3 vertexB;
+	Eigen::Vector3 vertexC;
 
-	std::deque<Eigen::Vector3f*> vertices;
+	std::deque<Eigen::Vector3*> vertices;
 };
 
 
@@ -153,14 +153,14 @@ public:
 		unsigned int vertices[3];
 	};
 
-	std::deque<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > vertices;
+	std::deque<Eigen::Vector3, Eigen::aligned_allocator<Eigen::Vector3> > vertices;
 	std::deque<Face> faces;
 
 	float volume() const;
 };
 
 // Transform a mesh
-Mesh operator* (const Eigen::Isometry3f& t, const Mesh& a);
+Mesh operator* (const Eigen::Isometry3& t, const Mesh& a);
 
 std::ostream& operator <<(std::ostream& s, Ray r);
 
@@ -168,8 +168,8 @@ std::ostream& operator <<(std::ostream& s, Triangle tri);
 
 std::ostream& operator <<(std::ostream& s, Mesh r);
 
-Eigen::Vector3f intersectRayPlane(Ray r, Plane p);
-Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t);
+Eigen::Vector3 intersectRayPlane(Ray r, Plane p);
+Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t);
 
 
 }

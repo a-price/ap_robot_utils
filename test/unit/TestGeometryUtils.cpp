@@ -67,10 +67,10 @@ public:
 	{
 		ap::QuaternionStdVector qs;
 		std::vector<float> weights;
-		Eigen::Quaternionf resultA, resultB;
+		Eigen::Quaternion<ap::decimal> resultA, resultB;
 
-		qs.push_back(Eigen::Quaternionf(1,1,0,0));
-		qs.push_back(Eigen::Quaternionf(1,0,0,1));
+		qs.push_back(Eigen::Quaternion<ap::decimal>(1,1,0,0));
+		qs.push_back(Eigen::Quaternion<ap::decimal>(1,0,0,1));
 		weights.push_back(1);
 		weights.push_back(1);
 
@@ -90,7 +90,7 @@ public:
 		CPPUNIT_ASSERT(resultA.isApprox(resultB));
 
 		// Test legit varying weights
-		qs.push_back(Eigen::Quaternionf(1,0,1,0));
+		qs.push_back(Eigen::Quaternion<ap::decimal>(1,0,1,0));
 		resultB = ap::averageQuaternions(qs, &weights);
 		std::cerr << resultB.matrix() << std::endl << std::endl;
 	}
@@ -98,16 +98,16 @@ public:
 	void TestRayIntersection()
 	{
 		ap::Ray r;
-		r.point = Eigen::Vector3f::Zero();
-		r.vector = Eigen::Vector3f::UnitX();
+		r.point = Eigen::Vector3::Zero();
+		r.vector = Eigen::Vector3::UnitX();
 
-		Eigen::Vector3f a = Eigen::Vector3f(1,1,-1);
-		Eigen::Vector3f b = Eigen::Vector3f(1,0,1);
-		Eigen::Vector3f c = Eigen::Vector3f(1,-1,-1);
+		Eigen::Vector3 a = Eigen::Vector3(1,1,-1);
+		Eigen::Vector3 b = Eigen::Vector3(1,0,1);
+		Eigen::Vector3 c = Eigen::Vector3(1,-1,-1);
 		ap::Triangle t1(a, b, c);
 
 		// Test plane intersection
-		ap::Point expected = Eigen::Vector3f(1,0,0);
+		ap::Point expected = Eigen::Vector3(1,0,0);
 		ap::Point actual = ap::intersectRayPlane(r, t1.getPlane());
 
 		std::cerr << "Expected: " << expected.transpose() << std::endl;
@@ -124,32 +124,32 @@ public:
 		CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
 
 		// Test missed intersection
-		Eigen::Vector3f b2 = Eigen::Vector3f(1,0,-2);
+		Eigen::Vector3 b2 = Eigen::Vector3(1,0,-2);
 		ap::Triangle t2(a, b2, c);
 
 		actual = ap::intersectRayTriangle(r, t2);
 
-		std::cerr << "Expected: " << (Eigen::Vector3f::Ones() * NAN).transpose() << std::endl;
+		std::cerr << "Expected: " << (Eigen::Vector3::Ones() * NAN).transpose() << std::endl;
 		std::cerr << "Actual: " << actual.transpose() << std::endl;
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 
 		// Test degenerate triangle
-		b2 = Eigen::Vector3f(1,0,-1);
+		b2 = Eigen::Vector3(1,0,-1);
 		t2 = ap::Triangle(a, b2, c);
 
 		actual = ap::intersectRayTriangle(r, t2);
 
-		std::cerr << "Expected: " << (Eigen::Vector3f::Ones() * NAN).transpose() << std::endl;
+		std::cerr << "Expected: " << (Eigen::Vector3::Ones() * NAN).transpose() << std::endl;
 		std::cerr << "Actual: " << actual.transpose() << std::endl;
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 
 		// Test Parallel triangle
-		r.vector = Eigen::Vector3f::UnitZ();
+		r.vector = Eigen::Vector3::UnitZ();
 		actual = ap::intersectRayPlane(r, t1.getPlane());
 
-		std::cerr << "Expected: " << (Eigen::Vector3f::Ones() * NAN).transpose() << std::endl;
+		std::cerr << "Expected: " << (Eigen::Vector3::Ones() * NAN).transpose() << std::endl;
 		std::cerr << "Actual: " << actual.transpose() << std::endl;
 
 		// TODO: Test Perpendicular, nonintersecting triangle

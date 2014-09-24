@@ -38,8 +38,7 @@
 #ifndef OCTREE_H
 #define OCTREE_H
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
+#include "ap_robot_utils/eigen_definitions.h"
 
 #ifdef USE_CPP_11
 #include <memory>
@@ -66,13 +65,13 @@ class Element
 public:
 //	friend class Octree<T>;
 
-	Eigen::Vector3f mCenter;
+	Eigen::Vector3 mCenter;
 	float mCubeDiameter;
 	shared_ptr<T> mData;
 	bool mHasChildren;
 	int mChildIndexOfParent;
 
-	Element(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
+	Element(const Eigen::Vector3& center = Eigen::Vector3::Zero(), const float width = 1,
 			shared_ptr<Element> parent = shared_ptr<Element>(),
 			shared_ptr<T> data = nullptr);
 
@@ -86,7 +85,7 @@ public:
 	 * @brief Returns the smallest containing element for the query point
 	 * @param query Point for which to find smallest containing element
 	 */
-	shared_ptr<Element> search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+	shared_ptr<Element> search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
 
 	shared_ptr<Element> nextLeaf(const int startChild = 0);
 	void printPath();
@@ -101,7 +100,7 @@ template <class T>
 class Octree
 {
 public:
-	Octree(const Eigen::Vector3f& center = Eigen::Vector3f::Zero(), const float width = 1,
+	Octree(const Eigen::Vector3& center = Eigen::Vector3::Zero(), const float width = 1,
 		   shared_ptr<T> data = nullptr) // Create root element and smart pointer to it
 	{
 		mTree = shared_ptr<Element<T> >(new Element<T> (center, width, NULL, data));
@@ -113,7 +112,7 @@ public:
 		mTree->expand(levels);
 	}
 
-	shared_ptr<Element<T> > search(Eigen::Vector3f& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	shared_ptr<Element<T> > search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
 	{
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
 	}
@@ -127,7 +126,7 @@ public:
 //////////////////////////////////////////////
 
 template <class T>
-Element<T>::Element(const Eigen::Vector3f& center, const float width,
+Element<T>::Element(const Eigen::Vector3& center, const float width,
 				 shared_ptr<Element> parent,
 				 shared_ptr<T> data)
 {
@@ -154,7 +153,7 @@ void Element<T>::expand(unsigned int levels)
 		{
 			float newWidth = mCubeDiameter/2.0f;
 			float newRadius = mCubeDiameter/4.0f;
-			Eigen::Vector3f childCenter(mCenter[0] + ((i < 4) ? newRadius : -newRadius ),
+			Eigen::Vector3 childCenter(mCenter[0] + ((i < 4) ? newRadius : -newRadius ),
 										mCenter[1] + (((i % 4) < 2) ? newRadius : -newRadius ),
 										mCenter[2] + (((i % 2) == 0) ? newRadius : -newRadius ));
 			mChildren[i] = shared_ptr<Element<T> >(new Element<T>(childCenter, newWidth, mSelf));
@@ -169,7 +168,7 @@ void Element<T>::expand(unsigned int levels)
 }
 
 template <class T>
-shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3f& queryPt, const int maxLevel, const bool drillDownToDepth)
+shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3& queryPt, const int maxLevel, const bool drillDownToDepth)
 {
 	assert(!(maxLevel < 0 && drillDownToDepth)); // This pair will drill down forever
 	// Check for maxDepth

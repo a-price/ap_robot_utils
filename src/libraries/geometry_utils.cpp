@@ -41,7 +41,7 @@
 
 namespace ap
 {
-void setQuaternionDataVector(Eigen::Quaternionf& q, const Eigen::Vector4f& v)
+void setQuaternionDataVector(Eigen::Quaternion<ap::decimal>& q, const Eigen::Vector4& v)
 {
 	q.w() = v.w();
 	q.x() = v.x();
@@ -49,7 +49,7 @@ void setQuaternionDataVector(Eigen::Quaternionf& q, const Eigen::Vector4f& v)
 	q.z() = v.z();
 }
 
-void getQuaternionDataVector(const Eigen::Quaternionf& q, Eigen::Vector4f& v)
+void getQuaternionDataVector(const Eigen::Quaternion<ap::decimal>& q, Eigen::Vector4& v)
 {
 	v.w() = q.w();
 	v.x() = q.x();
@@ -57,12 +57,12 @@ void getQuaternionDataVector(const Eigen::Quaternionf& q, Eigen::Vector4f& v)
 	v.z() = q.z();
 }
 
-Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
+Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 									  std::vector<float>* weights)
 {
-	Eigen::Matrix4f accumulator = Eigen::Matrix4f::Zero();
+	Eigen::Matrix4 accumulator = Eigen::Matrix4::Zero();
 	const int n = qs.size();
-	Eigen::Vector4f qVec;
+	Eigen::Vector4 qVec;
 
 	for (int i = 0; i < n; i++)
 	{
@@ -74,7 +74,7 @@ Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
 		float totalWeight;
 		for (int i = 0; i < n; i++)
 		{
-			Eigen::Quaternionf& q = qs[i];
+			Eigen::Quaternion<ap::decimal>& q = qs[i];
 			getQuaternionDataVector(q, qVec);
 			accumulator += (qVec * qVec.transpose()) * (*weights)[i];
 			totalWeight += (*weights)[i];
@@ -86,7 +86,7 @@ Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
 	{
 		for (int i = 0; i < n; i++)
 		{
-			Eigen::Quaternionf& q = qs[i];
+			Eigen::Quaternion<ap::decimal>& q = qs[i];
 			getQuaternionDataVector(q, qVec);
 			accumulator += qVec * qVec.transpose();
 		}
@@ -94,10 +94,10 @@ Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
 		accumulator /= (float)n;
 	}
 
-	Eigen::JacobiSVD<Eigen::Matrix4f> svd(accumulator, Eigen::ComputeFullU);
+	Eigen::JacobiSVD<Eigen::Matrix4> svd(accumulator, Eigen::ComputeFullU);
 	qVec = svd.matrixU().col(0);
 
-	Eigen::Quaternionf retVal;
+	Eigen::Quaternion<ap::decimal> retVal;
 	setQuaternionDataVector(retVal, qVec);
 	retVal.normalize();
 
@@ -107,7 +107,7 @@ Eigen::Quaternionf averageQuaternions(QuaternionStdVector& qs,
 
 
 // Transform a mesh
-Mesh operator* (const Eigen::Isometry3f& t, const Mesh& a)
+Mesh operator* (const Eigen::Isometry3& t, const Mesh& a)
 {
 	Mesh newMesh;
 	newMesh.faces.insert(newMesh.faces.begin(), a.faces.begin(), a.faces.end());
@@ -153,18 +153,18 @@ std::ostream& operator <<(std::ostream& s, Mesh r)
 }
 
 
-Eigen::Vector3f intersectRayPlane(Ray r, Plane p)
+Eigen::Vector3 intersectRayPlane(Ray r, Plane p)
 {
 	float temp = (r.point.dot(p.normal) + p.distance)/(r.vector.dot(p.normal));
 	if (temp == 0) { temp = NAN; } // Plane contains ray origin
-	Eigen::Vector3f intersection = r.point + (temp * r.vector);
+	Eigen::Vector3 intersection = r.point + (temp * r.vector);
 	return intersection;
 }
 
-Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t)
+Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 {
 	// Find intersection of plane and ray
-	Eigen::Vector3f result = intersectRayPlane(r, t.getPlane());
+	Eigen::Vector3 result = intersectRayPlane(r, t.getPlane());
 	if (!std::isfinite(result.x()))
 	{
 		// Parallel to plane, return NaNs
@@ -175,9 +175,9 @@ Eigen::Vector3f intersectRayTriangle(Ray r, Triangle t)
 	bool insideTriangle = true;
 	for (int i = 0; i < 3; i++)
 	{
-		Eigen::Vector3f v1 = (*t.vertices[i]) - r.point;
-		Eigen::Vector3f v2 = (*t.vertices[(i+1)%3]) - r.point;
-		Eigen::Vector3f tempNorm = v2.cross(v1).normalized();
+		Eigen::Vector3 v1 = (*t.vertices[i]) - r.point;
+		Eigen::Vector3 v2 = (*t.vertices[(i+1)%3]) - r.point;
+		Eigen::Vector3 tempNorm = v2.cross(v1).normalized();
 
 		float d = r.point.dot(tempNorm);
 		if (result.dot(tempNorm) > d)
@@ -202,9 +202,9 @@ float Mesh::volume() const
 	// Compute the signed volume of each facet to the origin
 	for (int i = 0; i < n; ++i)
 	{
-		const Eigen::Vector3f p1 = vertices[faces[i].vertices[0]];
-		const Eigen::Vector3f p2 = vertices[faces[i].vertices[1]];
-		const Eigen::Vector3f p3 = vertices[faces[i].vertices[2]];
+		const Eigen::Vector3 p1 = vertices[faces[i].vertices[0]];
+		const Eigen::Vector3 p2 = vertices[faces[i].vertices[1]];
+		const Eigen::Vector3 p3 = vertices[faces[i].vertices[2]];
 
 		float signedVol = (p1).dot((p2).cross(p3)) / 6.0f;
 

@@ -57,12 +57,12 @@ public:
 	{
 		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
 		ot->expand(3);
-		Eigen::Vector3f query(0.5, 0.1, -0.8);
+		Eigen::Vector3 query(0.5, 0.1, -0.8);
 		ap::shared_ptr<ap::Octree::Element<float> > target = ot->search(query);
-		CPPUNIT_ASSERT_EQUAL(Eigen::Vector3f(0.4375, 0.0625, -0.4375), target->mCenter);
+		CPPUNIT_ASSERT_EQUAL(Eigen::Vector3(0.4375, 0.0625, -0.4375), target->mCenter);
 		CPPUNIT_ASSERT(!target->mHasChildren);
 
-		query = Eigen::Vector3f(0.2, 0.1, -0.3);
+		query = Eigen::Vector3(0.2, 0.1, -0.3);
 		target = ot->search(query);
 		std::cout << target->mCenter << "\n" << target->mHasChildren << std::endl;
 	}
@@ -70,7 +70,7 @@ public:
 	void TestDrillDown()
 	{
 		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
-		Eigen::Vector3f query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
+		Eigen::Vector3 query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
 		ap::shared_ptr<ap::Octree::Element<float> > res = ot->search(query, 0, true);
 		CPPUNIT_ASSERT(ot->mTree == res); // Root node is tree
 		CPPUNIT_ASSERT(!ot->mTree->mHasChildren);
@@ -84,7 +84,7 @@ public:
 	{
 		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
 		ot->expand(2);
-		Eigen::Vector3f query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
+		Eigen::Vector3 query(rand()/RAND_MAX, rand()/RAND_MAX, rand()/RAND_MAX);
 		ap::shared_ptr<ap::Octree::Element<float> > res = ot->search(query, 3, true);
 		ap::shared_ptr<ap::Octree::Element<float> > leaf = ot->mTree->nextLeaf();
 		leaf = leaf->nextLeaf();

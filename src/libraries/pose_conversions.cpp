@@ -39,33 +39,33 @@
 
 namespace ap
 {
-Eigen::Vector3f toEVector3(const urdf::Vector3 &vector)
+Eigen::Vector3 toEVector3(const urdf::Vector3 &vector)
 {
-	Eigen::Vector3f newVector;
+	Eigen::Vector3 newVector;
 	newVector.x() = vector.x;
 	newVector.y() = vector.y;
 	newVector.z() = vector.z;
 	return newVector;
 }
 
-Eigen::Isometry3f toIsometry(const geometry_msgs::Pose& pose)
+Eigen::Isometry3 toIsometry(const geometry_msgs::Pose& pose)
 {
-	Eigen::Isometry3f result = Eigen::Isometry3f::Identity();
-	Eigen::Vector3f trans(pose.position.x,pose.position.y,pose.position.z);
-	Eigen::Quaternionf quat(pose.orientation.w,pose.orientation.x,pose.orientation.y,pose.orientation.z);
+	Eigen::Isometry3 result = Eigen::Isometry3::Identity();
+	Eigen::Vector3 trans(pose.position.x,pose.position.y,pose.position.z);
+	Eigen::Quaternion<ap::decimal> quat(pose.orientation.w,pose.orientation.x,pose.orientation.y,pose.orientation.z);
 
 	result.translate(trans);
 	result.rotate(quat);
 
 	return result;
 }
-Eigen::Isometry3f toIsometry(tf::Transform& pose)
+Eigen::Isometry3 toIsometry(tf::Transform& pose)
 {
-	Eigen::Isometry3f result = Eigen::Isometry3f::Identity();
+	Eigen::Isometry3 result = Eigen::Isometry3::Identity();
 	tf::Vector3 tVec = pose.getOrigin();
 	tf::Quaternion tQuat = pose.getRotation();
-	Eigen::Vector3f trans(tVec.x(),tVec.y(),tVec.z());
-	Eigen::Quaternionf quat(tQuat.w(),tQuat.x(),tQuat.y(),tQuat.z());
+	Eigen::Vector3 trans(tVec.x(),tVec.y(),tVec.z());
+	Eigen::Quaternion<ap::decimal> quat(tQuat.w(),tQuat.x(),tQuat.y(),tQuat.z());
 
 	result.translate(trans);
 	result.rotate(quat);

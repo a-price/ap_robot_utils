@@ -70,7 +70,7 @@ typedef std::map<std::string, ap::Mesh*> MeshMap;
 MeshMap scenes;
 MeshMap transformedScenes;
 
-typedef std::map<std::string, Eigen::Isometry3f, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3f> > > TransformMap;
+typedef std::map<std::string, Eigen::Isometry3, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3> > > TransformMap;
 TransformMap transforms;
 
 image_geometry::PinholeCameraModel mCameraModel;
@@ -101,7 +101,7 @@ ap::Mesh* meshAItoAP(const aiScene* inScene)
 	outMesh->vertices.resize(inScene->mMeshes[triMeshIdx]->mNumVertices);
 	for (int i = 0; i < inScene->mMeshes[triMeshIdx]->mNumVertices; i++)
 	{
-		outMesh->vertices[i] = Eigen::Vector3f(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
+		outMesh->vertices[i] = Eigen::Vector3(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
 											   inScene->mMeshes[triMeshIdx]->mVertices[i].y,
 											   inScene->mMeshes[triMeshIdx]->mVertices[i].z);
 		//std::cerr << outMesh->vertices[i].transpose() << std::endl;
@@ -171,7 +171,7 @@ cv::Mat projectWithEigen()
 	for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 	{
 		// Lookup current transform
-		Eigen::Isometry3f transform;
+		Eigen::Isometry3 transform;
 		transform = transforms.at(mMeshFrameIDs[frame]);
 
 		// Get copy of mesh for each frame
@@ -189,7 +189,7 @@ cv::Mat projectWithEigen()
 		// Transform mesh into camera frame
 		for (int i = 0; i < sourceMesh->vertices.size(); i++)
 		{
-			Eigen::Vector3f newVertex = transform * sourceMesh->vertices[i];
+			Eigen::Vector3 newVertex = transform * sourceMesh->vertices[i];
 			//std::cerr << mesh->vertices[i].transpose() << "\t->\t" << newVertex.transpose() << std::endl;
 			transformedMesh->vertices[i] = newVertex;
 		}
@@ -210,7 +210,7 @@ cv::Mat projectWithEigen()
 			cv::Point3d cvRay = mCameraModel.projectPixelTo3dRay(pixel);
 			// Convert cvRay to ap::Ray
 			ap::Ray ray;
-			ray.point = Eigen::Vector3f::Zero();
+			ray.point = Eigen::Vector3::Zero();
 			ray.vector.x() = cvRay.x; ray.vector.y() = cvRay.y; ray.vector.z() = cvRay.z;
 			ray.vector.normalize();
 			//std::cerr << ray.vector.transpose() << std::endl;
@@ -234,7 +234,7 @@ cv::Mat projectWithEigen()
 										  mesh->vertices[mesh->faces[i].vertices[1]],
 										  mesh->vertices[mesh->faces[i].vertices[2]]);
 
-					Eigen::Vector3f intersection = ap::intersectRayTriangle(ray, triangle);
+					Eigen::Vector3 intersection = ap::intersectRayTriangle(ray, triangle);
 					if (std::isfinite(intersection.x()))
 					{
 						float d = intersection.norm();
@@ -284,11 +284,11 @@ int main(int argc, char** argv)
 	mMeshFrameIDs.push_back("cube");
 	init();
 
-	Eigen::Isometry3f cubeTF = Eigen::Isometry3f::Identity();
-	cubeTF.rotate(Eigen::AngleAxisf(M_PI / 4.0, Eigen::Vector3f::UnitZ()));
+	Eigen::Isometry3 cubeTF = Eigen::Isometry3::Identity();
+	cubeTF.rotate(Eigen::AngleAxis<ap::decimal>(M_PI / 4.0, Eigen::Vector3::UnitZ()));
 
-	cubeTF.translate(Eigen::Vector3f(0.1,0.1,2));
-	cubeTF.rotate(Eigen::AngleAxisf(M_PI / 4.0, Eigen::Vector3f::UnitY()));
+	cubeTF.translate(Eigen::Vector3(0.1,0.1,2));
+	cubeTF.rotate(Eigen::AngleAxis<ap::decimal>(M_PI / 4.0, Eigen::Vector3::UnitY()));
 	transforms.insert(TransformMap::value_type("cube", cubeTF));
 	cv::Mat testImg = projectWithEigen();
 	cv::imshow("img", testImg);

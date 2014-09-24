@@ -83,7 +83,7 @@ ap::Mesh* meshAItoAP(const aiScene* inScene)
 	outMesh->vertices.resize(inScene->mMeshes[triMeshIdx]->mNumVertices);
 	for (int i = 0; i < inScene->mMeshes[triMeshIdx]->mNumVertices; i++)
 	{
-		outMesh->vertices[i] = Eigen::Vector3f(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
+		outMesh->vertices[i] = Eigen::Vector3(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
 											   inScene->mMeshes[triMeshIdx]->mVertices[i].y,
 											   inScene->mMeshes[triMeshIdx]->mVertices[i].z);
 		//std::cerr << outMesh->vertices[i].transpose() << std::endl;
@@ -147,7 +147,7 @@ image_geometry::PinholeCameraModel createIdealCamera()
 class MeshProjector
 {
 public:
-	typedef std::map<std::string, Eigen::Isometry3f, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3f> > > TransformMap;
+	typedef std::map<std::string, Eigen::Isometry3, std::less<std::string>, Eigen::aligned_allocator<std::pair<const std::string, Eigen::Isometry3> > > TransformMap;
 	//typedef std::map<std::string, aiMatrix4x4> TransformMap;
 	typedef std::map<std::string, ap::Mesh*> MeshMap;
 
@@ -237,9 +237,9 @@ public:
 		std::cerr << "Initialized with " << totalMeshes << " meshes and " << totalFaces << " faces." << std::endl;
 	}
 
-	Eigen::Vector3f getEigenVector3f(aiVector3D* vec)
+	Eigen::Vector3 getEigenVector3(aiVector3D* vec)
 	{
-		Eigen::Vector3f newVector;
+		Eigen::Vector3 newVector;
 		newVector.x() = vec->x;
 		newVector.y() = vec->y;
 		newVector.z() = vec->z;
@@ -257,7 +257,7 @@ public:
 			try
 			{
 				mTFListener.lookupTransform(mCameraFrameID, mMeshFrameIDs[frame], ros::Time(0), transform);
-				Eigen::Isometry3f aTransform = ap::toIsometry(transform);
+				Eigen::Isometry3 aTransform = ap::toIsometry(transform);
 				TransformMap::value_type tfPair(mMeshFrameIDs[frame], aTransform);
 				transforms.insert(tfPair);
 			}
@@ -278,7 +278,7 @@ public:
 		for (int frame = 0; frame < mMeshFrameIDs.size(); frame++)
 		{
 			// Lookup current transform
-			Eigen::Isometry3f transform;
+			Eigen::Isometry3 transform;
 			transform = transforms.at(mMeshFrameIDs[frame]);
 
 			// Get copy of mesh for each frame
@@ -296,7 +296,7 @@ public:
 			// Transform mesh into camera frame
 			for (int i = 0; i < sourceMesh->vertices.size(); i++)
 			{
-				Eigen::Vector3f newVertex = transform * sourceMesh->vertices[i];
+				Eigen::Vector3 newVertex = transform * sourceMesh->vertices[i];
 				//std::cerr << mesh->vertices[i].transpose() << "\t->\t" << newVertex.transpose() << std::endl;
 				transformedMesh->vertices[i] = newVertex;
 			}
@@ -317,7 +317,7 @@ public:
 				cv::Point3d cvRay = mCameraModel.projectPixelTo3dRay(pixel);
 				// Convert cvRay to ap::Ray
 				ap::Ray ray;
-				ray.point = Eigen::Vector3f::Zero();
+				ray.point = Eigen::Vector3::Zero();
 				ray.vector.x() = cvRay.x; ray.vector.y() = cvRay.y; ray.vector.z() = cvRay.z;
 				ray.vector.normalize();
 				//std::cerr << ray.vector.transpose() << std::endl;
@@ -341,7 +341,7 @@ public:
 											  mesh->vertices[mesh->faces[i].vertices[1]],
 											  mesh->vertices[mesh->faces[i].vertices[2]]);
 
-						Eigen::Vector3f intersection = ap::intersectRayTriangle(ray, triangle);
+						Eigen::Vector3 intersection = ap::intersectRayTriangle(ray, triangle);
 						if (std::isfinite(intersection.x()))
 						{
 							float d = intersection.norm();

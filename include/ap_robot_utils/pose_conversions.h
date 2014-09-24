@@ -42,9 +42,7 @@
 #ifndef POSECONVERTER_H_
 #define POSECONVERTER_H_
 
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-//#include <Eigen/src/Core/Block.h>
+#include "ap_robot_utils/eigen_definitions.h"
 
 #include <tf/tf.h>
 #include <tf/transform_datatypes.h>
@@ -58,10 +56,10 @@ namespace ap
 //****************************************
 // Convert to Eigen structures
 //****************************************
-Eigen::Vector3f toEVector3(const urdf::Vector3& vector);
+Eigen::Vector3 toEVector3(const urdf::Vector3& vector);
 
-Eigen::Isometry3f toIsometry(const geometry_msgs::Pose& pose);
-Eigen::Isometry3f toIsometry(tf::Transform& pose);
+Eigen::Isometry3 toIsometry(const geometry_msgs::Pose& pose);
+Eigen::Isometry3 toIsometry(tf::Transform& pose);
 
 //****************************************
 // Convert to TF structures
