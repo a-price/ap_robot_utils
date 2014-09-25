@@ -67,7 +67,7 @@ Eigen::Isometry3 toIsometry(tf::Transform& pose);
 tf::Transform toTF(geometry_msgs::Pose& pose);
 
 template <typename Derived>
-tf::Transform toTF(Eigen::Transform<Derived, 3, Eigen::Isometry>& pose)
+tf::Transform toTF(const Eigen::Transform<Derived, 3, Eigen::Isometry>& pose)
 {
 	tf::Transform t;
 	Eigen::Matrix<Derived, 3, 1> eTrans = pose.translation();
