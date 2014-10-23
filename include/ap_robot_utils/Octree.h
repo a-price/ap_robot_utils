@@ -39,21 +39,10 @@
 #define OCTREE_H
 
 #include "ap_robot_utils/eigen_definitions.h"
-
-#ifdef USE_CPP_11
-#include <memory>
-#else
-#include <boost/shared_ptr.hpp>
-#endif // USE_CPP_11
+#include "ap_robot_utils/shared_ptr.h"
 
 namespace ap
 {
-
-#ifdef USE_CPP_11
-using namespace std;
-#else
-using namespace boost;
-#endif // USE_CPP_11
 
 namespace Octree
 {
