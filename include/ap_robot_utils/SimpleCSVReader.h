@@ -102,5 +102,5 @@ public:
 	std::vector<CSVRow> data;
 };
 
-} /* namespace hubo_drc_vision */
+} /* namespace ap */
 #endif /* SIMPLECSVREADER_H_ */

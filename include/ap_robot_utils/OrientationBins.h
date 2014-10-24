@@ -74,12 +74,39 @@ template <class T>
 class OrientationBins
 {
 public:
+	typedef typename std::array<shared_ptr<T>, NUM_90DEG_ORIENTATIONS>::iterator bin_iterator;
+	shared_ptr<T>& search(const Quaternion& query);
 
 protected:
-
+	std::array<shared_ptr<T>, NUM_90DEG_ORIENTATIONS> mBins;
 };
 
+template <class T>
+shared_ptr<T>& OrientationBins<T>::search(const Quaternion& query)
+{
+	Quaternion qryInv = query.inverse();
+	ap::decimal minAngle = std::numeric_limits<ap::decimal>::max();
+
+	std::array<Quaternion, NUM_90DEG_ORIENTATIONS>::const_iterator iter, endIter = BaseOrientations::getInstance()->orientations().end();
+	bin_iterator targetIter, finalIter;
+
+	for (iter = BaseOrientations::getInstance()->orientations().begin(), targetIter = mBins.begin();
+	     iter != endIter;
+	     ++iter, ++targetIter)
+	{
+		ap::decimal angle = ap::AngleAxis(qryInv * (*iter)).angle();
+
+		if (angle < minAngle)
+		{
+			minAngle = angle;
+			finalIter = targetIter;
+		}
+	}
+
+	return *finalIter;
 }
+
+} // namespace ap
 
 
 #endif // ORIENTATIONBINS_H

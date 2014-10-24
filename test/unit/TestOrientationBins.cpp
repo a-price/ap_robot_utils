@@ -44,6 +44,7 @@
 class TestOrientationBins : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestOrientationBins );
+	CPPUNIT_TEST(TestInitialization);
 	CPPUNIT_TEST(TestBinSearch);
 	CPPUNIT_TEST_SUITE_END();
 public:
@@ -52,7 +53,7 @@ public:
 
 	virtual void tearDown () {}
 
-	void TestBinSearch()
+	void TestInitialization()
 	{
 		const std::array<ap::Quaternion, ap::NUM_90DEG_ORIENTATIONS>& bases = ap::BaseOrientations::getInstance()->orientations();
 
@@ -62,7 +63,7 @@ public:
 			{
 				ap::decimal angle = ap::AngleAxis(bases[i]*bases[j].inverse()).angle();
 //				std::cout << angle << std::endl;
-				if (fabs(angle) < 0.00001)
+				if (fabs(angle) < 0.99*M_PI/2.0)
 				{
 					std::cout << i << ":\n" << Eigen::Matrix3(bases[i]) << std::endl;
 					std::cout << j << ":\n" << Eigen::Matrix3(bases[j]) << std::endl;
@@ -70,6 +71,22 @@ public:
 				CPPUNIT_ASSERT(fabs(angle) > 0.99*M_PI/2.0);
 			}
 		}
+	}
+
+	void TestBinSearch()
+	{
+		ap::OrientationBins<ap::decimal> oBins;
+
+		ap::shared_ptr<ap::decimal>& bin = oBins.search(ap::Quaternion(Eigen::Matrix3::Identity()));
+
+		bin = ap::shared_ptr<ap::decimal>(new ap::decimal);
+		(*bin) = 0.0;
+
+		bin = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/8.0, Eigen::Vector3::UnitX())));
+		CPPUNIT_ASSERT(*bin == 0.0);
+
+		bin = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.0, Eigen::Vector3::UnitX())));
+		CPPUNIT_ASSERT(bin == ap::shared_ptr<ap::decimal>());
 	}
 
 };
