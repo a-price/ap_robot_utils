@@ -44,7 +44,7 @@
 
 namespace ap
 {
-
+/// @def NUM_90DEG_ORIENTATIONS Number of orthagonal orientation bins
 const int NUM_90DEG_ORIENTATIONS = 24;
 
 typedef Eigen::Quaternion<ap::decimal> Quaternion;
@@ -70,6 +70,28 @@ private:
 	static BaseOrientations* gBaseOrientations;
 };
 
+/**
+ * @brief The OrientationBins class
+ *
+ * @note Be careful when working with the shared_ptr references here.
+ * Writing code like this will give unexpected results:
+ * @code
+ * ap::shared_ptr<ap::decimal>& bin = oBins.search(ap::Quaternion(Eigen::Matrix3::Identity()));
+ * bin = ap::shared_ptr<ap::decimal>(new ap::decimal);
+ * (*bin) = 0.0;
+ * bin = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/8.0, Eigen::Vector3::UnitX()))); // This has overwritten the value in the identity bin
+ * @endcode
+ * Instead, use "fresh" references to each new cell:
+ * @code
+ * ap::shared_ptr<ap::decimal>& bin1 = oBins.search(ap::Quaternion(Eigen::Matrix3::Identity()));
+ * bin1 = ap::shared_ptr<ap::decimal>(new ap::decimal);
+ * (*bin1) = 1.0;
+ * ap::shared_ptr<ap::decimal>& bin2 = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.0, Eigen::Vector3::UnitX())));
+ * bin2 = ap::shared_ptr<ap::decimal>(new ap::decimal);
+ * (*bin2) = 2.0;
+ * @endcode
+ *
+ */
 template <class T>
 class OrientationBins
 {
@@ -77,7 +99,7 @@ public:
 	typedef typename std::array<shared_ptr<T>, NUM_90DEG_ORIENTATIONS>::iterator bin_iterator;
 	shared_ptr<T>& search(const Quaternion& query);
 
-protected:
+//protected:
 	std::array<shared_ptr<T>, NUM_90DEG_ORIENTATIONS> mBins;
 };
 

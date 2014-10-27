@@ -77,16 +77,24 @@ public:
 	{
 		ap::OrientationBins<ap::decimal> oBins;
 
-		ap::shared_ptr<ap::decimal>& bin = oBins.search(ap::Quaternion(Eigen::Matrix3::Identity()));
+		ap::shared_ptr<ap::decimal>& bin1 = oBins.search(ap::Quaternion(Eigen::Matrix3::Identity()));
+		bin1 = ap::shared_ptr<ap::decimal>(new ap::decimal);
+		(*bin1) = 0.0;
 
-		bin = ap::shared_ptr<ap::decimal>(new ap::decimal);
-		(*bin) = 0.0;
+		ap::shared_ptr<ap::decimal>& bin2 = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/8.0, Eigen::Vector3::UnitX())));
+		CPPUNIT_ASSERT(*bin2 == 0.0);
 
-		bin = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/8.0, Eigen::Vector3::UnitX())));
-		CPPUNIT_ASSERT(*bin == 0.0);
+		ap::shared_ptr<ap::decimal>& bin3 = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.05, Eigen::Vector3::UnitX())));
+		CPPUNIT_ASSERT(bin3 == ap::shared_ptr<ap::decimal>());
 
-		bin = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.0, Eigen::Vector3::UnitX())));
-		CPPUNIT_ASSERT(bin == ap::shared_ptr<ap::decimal>());
+		ap::shared_ptr<ap::decimal>& bin4 = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.0, Eigen::Vector3::UnitX())*ap::AngleAxis(M_PI/2.0, Eigen::Vector3::UnitZ())));
+		CPPUNIT_ASSERT(bin4 == ap::shared_ptr<ap::decimal>());
+		bin4 = ap::shared_ptr<ap::decimal>(new ap::decimal);
+		(*bin4) = 5.0;
+
+		ap::shared_ptr<ap::decimal>& bin5 = oBins.search(ap::Quaternion(ap::AngleAxis(M_PI/2.1, Eigen::Vector3::UnitX())*ap::AngleAxis(M_PI/2.1, Eigen::Vector3::UnitZ())));
+		CPPUNIT_ASSERT(bin5 != ap::shared_ptr<ap::decimal>());
+		CPPUNIT_ASSERT(*bin5 == 5.0);
 	}
 
 };
