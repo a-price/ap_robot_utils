@@ -39,10 +39,14 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include <ap_robot_utils/Octree.h>
+#include <ap_robot_utils/Quadtree.h>
+//#include <ap_robot_utils/KTree.h>
 
 class TestOctree : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE( TestOctree );
+	CPPUNIT_TEST(TestPrune);
+	CPPUNIT_TEST(TestQuadtreeSearch);
 	CPPUNIT_TEST(TestOctreeSearch);
 	CPPUNIT_TEST(TestDrillDown);
 	CPPUNIT_TEST(TestLeafIteration);
@@ -52,6 +56,44 @@ public:
 	virtual void setUp() {}
 
 	virtual void tearDown () {}
+
+	void TestPrune()
+	{
+		ap::shared_ptr<ap::Quadtree::Quadtree<float> > ot(new ap::Quadtree::Quadtree<float>() );
+		ot->expand(3);
+
+		ot->prune();
+
+		CPPUNIT_ASSERT(!ot->mTree->mHasChildren);
+
+		Eigen::Vector3 query(0.5, 0.1, -0.8);
+		ap::shared_ptr<ap::Quadtree::Element<float> > target = ot->search(query, 3, true);
+		target->mData = ap::shared_ptr<float>(new float(1.0));
+
+		query = Eigen::Vector3(0.2, 0.1, -0.3);
+		target = ot->search(query, 3, true);
+		target->mData = ap::shared_ptr<float>(new float(2.0));
+
+		ot->prune();
+
+		CPPUNIT_ASSERT(ot->mTree->mHasChildren);
+		CPPUNIT_ASSERT(target->mParent->mHasChildren);
+		target->printPath();
+	}
+
+	void TestQuadtreeSearch()
+	{
+		ap::shared_ptr<ap::Quadtree::Quadtree<float> > ot(new ap::Quadtree::Quadtree<float>() );
+		ot->expand(3);
+		Eigen::Vector3 query(0.5, 0.1, -0.8);
+		ap::shared_ptr<ap::Quadtree::Element<float> > target = ot->search(query);
+//		CPPUNIT_ASSERT_EQUAL(Eigen::Vector3(0.4375, 0.0625, -0.4375), target->mCenter);
+		CPPUNIT_ASSERT(!target->mHasChildren);
+
+		query = Eigen::Vector3(0.2, 0.1, -0.3);
+		target = ot->search(query);
+		std::cout << target->mCenter << "\n" << target->mHasChildren << std::endl;
+	}
 
 	void TestOctreeSearch()
 	{
