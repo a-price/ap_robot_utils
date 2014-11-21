@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_geometry
   image_transport
   pcl_ros
+  robot_kin
   roscpp
   sensor_msgs
   std_msgs
@@ -55,7 +56,7 @@ link_libraries(${CPPUNIT_LIBRARIES})
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl_ros roscpp sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
+  CATKIN_DEPENDS control_msgs cv_bridge diagnostic_msgs geometry_msgs image_geometry image_transport pcl_ros roscpp robot_kin sensor_msgs std_msgs tf trajectory_msgs urdf visualization_msgs resource_retriever
   DEPENDS system_lib
 )
 
@@ -76,6 +77,7 @@ include_directories("src/libraries/felzenszwalb")
 add_library(${PROJECT_NAME}
   src/libraries/probability_utils.cpp
   src/libraries/geometry_utils.cpp
+  src/libraries/GhostRobot.cpp
   src/libraries/ros_utils.cpp
   src/libraries/pose_conversions.cpp
   src/libraries/image_segmentation.cpp
