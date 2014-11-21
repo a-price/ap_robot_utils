@@ -1,9 +1,9 @@
 /**
- * \file Octree.h
+ * \file Quadtree.h
  * \brief
  *
  * \author Andrew Price
- * \date January 8, 2014
+ * \date October 27, 2014
  *
  * \copyright
  *
@@ -35,8 +35,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef OCTREE_H
-#define OCTREE_H
+#ifndef QUADTREE_H
+#define QUADTREE_H
 
 #include "ap_robot_utils/eigen_definitions.h"
 #include "ap_robot_utils/shared_ptr.h"
@@ -44,7 +44,7 @@
 namespace ap
 {
 
-namespace Octree
+namespace Quadtree
 {
 
 //typedef float T;
@@ -52,20 +52,20 @@ template <class T>
 class Element
 {
 public:
-//	friend class Octree<T>;
+//	friend class Quadtree<T>;
 
-	Eigen::Vector3 mCenter;
-	float mCubeDiameter;
+	Eigen::Vector2 mCenter;
+	float mCellDiameter;
 	shared_ptr<T> mData;
 	bool mHasChildren;
 	int mChildIndexOfParent;
 
-	Element(const Eigen::Vector3& center = Eigen::Vector3::Zero(), const float width = 1,
+	Element(const Eigen::Vector2& center = Eigen::Vector2::Zero(), const float width = 1,
 			shared_ptr<Element> parent = shared_ptr<Element>(),
 			shared_ptr<T> data = nullptr);
 
 	/**
-	 * @brief Expand this leaf into a branch with 8 children
+	 * @brief Expand this leaf into a branch with 4 children
 	 * @param levels Number of levels to expand
 	 */
 	void expand(unsigned int levels = 1);
@@ -79,22 +79,22 @@ public:
 	 * @brief Returns the smallest containing element for the query point
 	 * @param query Point for which to find smallest containing element
 	 */
-	shared_ptr<Element> search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+	shared_ptr<Element> search(Eigen::Vector2& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
 
 	shared_ptr<Element> nextLeaf(const int startChild = 0);
 	void printPath();
 
 //protected:
-	shared_ptr<Element> mChildren[8];
+	shared_ptr<Element> mChildren[4];
 	shared_ptr<Element> mSelf;
 	shared_ptr<Element> mParent;
 };
 
 template <class T>
-class Octree
+class Quadtree
 {
 public:
-	Octree(const Eigen::Vector3& center = Eigen::Vector3::Zero(), const float width = 1,
+	Quadtree(const Eigen::Vector2& center = Eigen::Vector2::Zero(), const float width = 1,
 		   shared_ptr<T> data = nullptr) // Create root element and smart pointer to it
 	{
 		mTree = shared_ptr<Element<T> >(new Element<T> (center, width, NULL, data));
@@ -114,9 +114,16 @@ public:
 		mTree->prune();
 	}
 
-	shared_ptr<Element<T> > search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	shared_ptr<Element<T> > search(Eigen::Vector2& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
 	{
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
+	}
+
+	shared_ptr<Element<T> > search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	{
+		ap::decimal w = sqrt(queryPt.x()*queryPt.x() + queryPt.y()*queryPt.y());
+		Eigen::Vector2 queryPt2d(w, queryPt.z());
+		return mTree->search(queryPt2d, maxLevel, drillDownToDepth);
 	}
 
 	shared_ptr<Element<T> > mTree;
@@ -128,18 +135,18 @@ public:
 //////////////////////////////////////////////
 
 template <class T>
-Element<T>::Element(const Eigen::Vector3& center, const float width,
+Element<T>::Element(const Eigen::Vector2& center, const float width,
 				 shared_ptr<Element> parent,
 				 shared_ptr<T> data)
 {
 	mCenter = center;
-	mCubeDiameter = width;
+	mCellDiameter = width;
 	mParent = parent;
 	mData = data;
 	mHasChildren = false;
 	mChildIndexOfParent = 0;
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		mChildren[i] = shared_ptr<Element>();
 	}
@@ -151,13 +158,12 @@ void Element<T>::expand(unsigned int levels)
 	if (levels > 0)
 	{
 		mHasChildren = true;
-		for (int i = 0; i < 8; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
-			float newWidth = mCubeDiameter/2.0f;
-			float newRadius = mCubeDiameter/4.0f;
-			Eigen::Vector3 childCenter(mCenter[0] + ((i < 4) ? newRadius : -newRadius ),
-										mCenter[1] + (((i % 4) < 2) ? newRadius : -newRadius ),
-										mCenter[2] + (((i % 2) == 0) ? newRadius : -newRadius ));
+			float newWidth = mCellDiameter/2.0f;
+			float newRadius = mCellDiameter/4.0f;
+			Eigen::Vector2 childCenter(mCenter[0] + (((i % 4) < 2) ? newRadius : -newRadius ),
+			                           mCenter[1] + (((i % 2) == 0) ? newRadius : -newRadius ));
 			mChildren[i] = shared_ptr<Element<T> >(new Element<T>(childCenter, newWidth, mSelf));
 			mChildren[i]->mSelf = mChildren[i];
 			mChildren[i]->mChildIndexOfParent = i;
@@ -175,7 +181,7 @@ void Element<T>::prune()
 	if (mHasChildren)
 	{
 		bool childHasData = false;
-		for (int i = 0; i < 8; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
 			if (shared_ptr<Element<T> >() != mChildren[i])
 			{
@@ -191,7 +197,7 @@ void Element<T>::prune()
 
 		if (!childHasData)
 		{
-			for (int i = 0; i < 8; ++i)
+			for (int i = 0; i < 4; ++i)
 			{
 				// Don't forget to delete the self-pointer in the child
 				mChildren[i]->mSelf = shared_ptr<Element<T> >();
@@ -203,7 +209,7 @@ void Element<T>::prune()
 }
 
 template <class T>
-shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3& queryPt, const int maxLevel, const bool drillDownToDepth)
+shared_ptr<Element<T> > Element<T>::search(Eigen::Vector2& queryPt, const int maxLevel, const bool drillDownToDepth)
 {
 	assert(!(maxLevel < 0 && drillDownToDepth)); // This pair will drill down forever
 	// Check for maxDepth
@@ -235,7 +241,7 @@ shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3& queryPt, const int ma
 	// Find closest child
 	float minD = std::numeric_limits<float>::max();
 	int nearestIndex = 0;
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		float d = (queryPt - mChildren[i]->mCenter).squaredNorm(); // Cheaper than regular norm
 		if (d < minD)
@@ -251,8 +257,8 @@ shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3& queryPt, const int ma
 template <class T>
 shared_ptr<Element<T> > Element<T>::nextLeaf(const int startChild)
 {
-	assert(startChild <= 8);
-	if (!mHasChildren || startChild == 8)
+	assert(startChild <= 4);
+	if (!mHasChildren || startChild == 4)
 	{
 		if (shared_ptr<Element<T> >() != mParent)
 		{
@@ -292,8 +298,8 @@ void Element<T>::printPath()
 }
 
 
-} // namespace Octree
+} // namespace Quadtree
 } // namespace ap
 
 
-#endif // OCTREE_H
+#endif // QUADTREE_H
