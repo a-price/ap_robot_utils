@@ -55,7 +55,7 @@ Eigen::Isometry3 toIsometry(const geometry_msgs::Pose& pose)
 	Eigen::Quaternion<ap::decimal> quat(pose.orientation.w,pose.orientation.x,pose.orientation.y,pose.orientation.z);
 
 	result.translate(trans);
-	result.rotate(quat);
+	result.rotate(quat.normalized());
 
 	return result;
 }
