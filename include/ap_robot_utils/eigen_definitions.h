@@ -40,6 +40,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+//#include <Eigen/StdVector>
 #include <vector>
 
 //#define DOUBLE_PRECISION
@@ -75,7 +76,8 @@ typedef Transform<ap::decimal,3,Isometry> Isometry3;
 
 typedef std::vector<Vector3, aligned_allocator<Vector3> > Vector3List;
 typedef std::vector<Vector6, aligned_allocator<Vector6> > Vector6List;
-
+//typedef std::vector<Vector3> Vector3List;
+//typedef std::vector<Vector6> Vector6List;
 }
 
 #endif // AP_EIGEN_DEFINITIONS_H

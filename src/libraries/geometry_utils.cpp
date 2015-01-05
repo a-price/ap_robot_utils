@@ -156,7 +156,7 @@ std::ostream& operator <<(std::ostream& s, Mesh r)
 Eigen::Vector3 intersectRayPlane(Ray r, Plane p)
 {
 	float temp = (r.point.dot(p.normal) + p.distance)/(r.vector.dot(p.normal));
-	if (temp == 0) { temp = NAN; } // Plane contains ray origin
+	if (temp == 0) { return r.point; } // Plane contains ray origin
 	Eigen::Vector3 intersection = r.point + (temp * r.vector);
 	return intersection;
 }

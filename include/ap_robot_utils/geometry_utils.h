@@ -66,14 +66,14 @@ public:
 class Plane
 {
 public:
-	Plane(Eigen::Vector3& n, Eigen::Vector3& p)
+	Plane(const Eigen::Vector3& n, const Eigen::Vector3& p)
 		: normal(n.normalized()),
 		  point(p)
 	{
 		distance = normal.dot(point);
 	}
 
-	Plane(Eigen::Vector3& n, float d)
+	Plane(const Eigen::Vector3& n, float d)
 		: normal(n.normalized()),
 		  distance(d)
 	{

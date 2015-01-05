@@ -84,8 +84,8 @@ ap::Mesh* meshAItoAP(const aiScene* inScene)
 	for (int i = 0; i < inScene->mMeshes[triMeshIdx]->mNumVertices; i++)
 	{
 		outMesh->vertices[i] = Eigen::Vector3(inScene->mMeshes[triMeshIdx]->mVertices[i].x,
-											   inScene->mMeshes[triMeshIdx]->mVertices[i].y,
-											   inScene->mMeshes[triMeshIdx]->mVertices[i].z);
+		                                      inScene->mMeshes[triMeshIdx]->mVertices[i].y,
+		                                      inScene->mMeshes[triMeshIdx]->mVertices[i].z);
 		//std::cerr << outMesh->vertices[i].transpose() << std::endl;
 	}
 
@@ -211,15 +211,15 @@ public:
 			}
 
 			const aiScene* scene = aiImportFileFromMemory((char*)resource.data.get(), resource.size,
-														  aiProcess_ValidateDataStructure |
-														  aiProcess_JoinIdenticalVertices |
-														  aiProcess_ImproveCacheLocality |
-														  aiProcess_Triangulate |
-														  aiProcess_OptimizeGraph |
-														  aiProcess_OptimizeMeshes |
-														  aiProcess_FindDegenerates |
-														  aiProcess_SortByPType,
-														  ".stl");
+			                                              aiProcess_ValidateDataStructure |
+			                                              aiProcess_JoinIdenticalVertices |
+			                                              aiProcess_ImproveCacheLocality |
+			                                              aiProcess_Triangulate |
+			                                              aiProcess_OptimizeGraph |
+			                                              aiProcess_OptimizeMeshes |
+			                                              aiProcess_FindDegenerates |
+			                                              aiProcess_SortByPType,
+			                                              ".stl");
 
 			if (scene == NULL)
 			{

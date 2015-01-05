@@ -42,6 +42,7 @@
 #include <memory>
 #else
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif // USE_CPP_11
 
 namespace ap

@@ -41,6 +41,8 @@
 #include "ap_robot_utils/eigen_definitions.h"
 #include "ap_robot_utils/shared_ptr.h"
 
+#include <iostream>
+
 namespace ap
 {
 
@@ -79,7 +81,7 @@ public:
 	 * @brief Returns the smallest containing element for the query point
 	 * @param query Point for which to find smallest containing element
 	 */
-	shared_ptr<Element> search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+	shared_ptr<Element> search(const Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
 
 	shared_ptr<Element> nextLeaf(const int startChild = 0);
 	void printPath();
@@ -114,7 +116,7 @@ public:
 		mTree->prune();
 	}
 
-	shared_ptr<Element<T> > search(Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
+	shared_ptr<Element<T> > search(const Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
 	{
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
 	}
@@ -203,7 +205,7 @@ void Element<T>::prune()
 }
 
 template <class T>
-shared_ptr<Element<T> > Element<T>::search(Eigen::Vector3& queryPt, const int maxLevel, const bool drillDownToDepth)
+shared_ptr<Element<T> > Element<T>::search(const Eigen::Vector3& queryPt, const int maxLevel, const bool drillDownToDepth)
 {
 	assert(!(maxLevel < 0 && drillDownToDepth)); // This pair will drill down forever
 	// Check for maxDepth
