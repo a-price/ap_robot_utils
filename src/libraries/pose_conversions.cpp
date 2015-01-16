@@ -73,7 +73,7 @@ Eigen::Isometry3 toIsometry(tf::Transform& pose)
 	return result;
 }
 
-tf::Transform toTF(geometry_msgs::Pose& pose)
+tf::Transform toTF(const geometry_msgs::Pose& pose)
 {
 	tf::Transform newTF;
 	tf::poseMsgToTF(pose, newTF);

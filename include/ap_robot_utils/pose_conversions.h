@@ -64,7 +64,7 @@ Eigen::Isometry3 toIsometry(tf::Transform& pose);
 //****************************************
 // Convert to TF structures
 //****************************************
-tf::Transform toTF(geometry_msgs::Pose& pose);
+tf::Transform toTF(const geometry_msgs::Pose& pose);
 
 template <typename Derived>
 tf::Transform toTF(const Eigen::Transform<Derived, 3, Eigen::Isometry>& pose)

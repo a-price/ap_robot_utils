@@ -50,4 +50,38 @@ inline ap::decimal randbetween(ap::decimal min, ap::decimal max)
 
 }
 
+namespace Eigen
+{
+template<typename _Matrix_Type_>
+bool pseudoInverse(const _Matrix_Type_ &a, _Matrix_Type_ &result, double
+				   epsilon = std::numeric_limits<typename _Matrix_Type_::Scalar>::epsilon())
+{
+	bool doTranspose = false;
+	_Matrix_Type_ a_oriented;
+	if(a.rows()<a.cols())
+	{
+		doTranspose = true;
+		a_oriented = a.transpose();
+	}
+	else
+	{
+		a_oriented = a;
+	}
+
+	Eigen::JacobiSVD< _Matrix_Type_ > svd = a_oriented.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+	typename _Matrix_Type_::Scalar tolerance = epsilon * std::max(a_oriented.cols(),
+																  a_oriented.rows()) * svd.singularValues().array().abs().maxCoeff();
+
+	result = svd.matrixV() * _Matrix_Type_( (svd.singularValues().array().abs() >
+											 tolerance).select(svd.singularValues().
+															   array().inverse(), 0) ).asDiagonal() * svd.matrixU().adjoint();
+	if (doTranspose)
+	{
+		result.transposeInPlace();
+	}
+	return true;
+}
+}
+
 #endif // MATH_UTILS_H
