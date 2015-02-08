@@ -136,24 +136,18 @@ list(SORT unit_tests_source)
 file(GLOB system_tests_source "test/system/*.cpp")
 list(SORT system_tests_source)
 
-# Build full unit test
-add_executable(TestAllUnits "test/test_units.cpp" ${unit_tests_source})
-add_test(TestAllUnits ${EXECUTABLE_OUTPUT_PATH}/TestAllUnits)
-target_link_libraries(TestAllUnits ${PROJECT_NAME})
-set_target_properties(TestAllUnits PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
-add_dependencies(tests TestAllUnits)
-
 # Build standalone unit tests
 message(STATUS "\n-- UNIT TESTS: ")
 foreach(utest_src_file ${unit_tests_source})
 	get_filename_component(test_base ${utest_src_file} NAME_WE)
 	message(STATUS "Adding test ${test_base}" )
 	add_executable(${test_base} "test/test_units.cpp" ${utest_src_file})
-	add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
-	#catkin_add_gtest(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
+	add_test(NAME ${test_base}
+                 COMMAND ${test_base}
+		 WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
 	target_link_libraries(${test_base} ${PROJECT_NAME})
 	set_target_properties(${test_base} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
-	add_dependencies(tests ${test_base})
+	#add_dependencies(tests ${test_base})
 endforeach(utest_src_file)
 
 # Build system tests
@@ -162,9 +156,9 @@ foreach(stest_src_file ${system_tests_source})
 	get_filename_component(test_base ${stest_src_file} NAME_WE)
 	message(STATUS "Adding test ${test_base}" )
 	add_executable(${test_base} ${stest_src_file})
-	add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
+	#add_test(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
 	#catkin_add_gtest(${test_base} ${EXECUTABLE_OUTPUT_PATH}/${test_base})
 	target_link_libraries(${test_base} ${PROJECT_NAME})
 	set_target_properties(${test_base} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})
-	add_dependencies(tests ${test_base})
+	#add_dependencies(tests ${test_base})
 endforeach(stest_src_file)

@@ -152,12 +152,11 @@ std::ostream& operator <<(std::ostream& s, Mesh r)
 	return s;
 }
 
-
 Eigen::Vector3 intersectRayPlane(Ray r, Plane p)
 {
-	float temp = (r.point.dot(p.normal) + p.distance)/(r.vector.dot(p.normal));
-	if (temp == 0) { return r.point; } // Plane contains ray origin
-	Eigen::Vector3 intersection = r.point + (temp * r.vector);
+	ap::decimal dist = -(r.point.dot(p.normal) - p.distance)/(r.vector.dot(p.normal));
+	if (dist == 0) { return r.point; } // Plane contains ray origin
+	Eigen::Vector3 intersection = r.point + (dist * r.vector);
 	return intersection;
 }
 

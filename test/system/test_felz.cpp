@@ -38,50 +38,31 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#include <cppunit/TestFixture.h>
-#include <cppunit/extensions/HelperMacros.h>
-
 #include <ap_robot_utils/image_segmentation.h>
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-class TestSegmentation : public CppUnit::TestFixture
+void TestImageSegmentation()
 {
-	CPPUNIT_TEST_SUITE( TestSegmentation );
-	CPPUNIT_TEST(TestImageSegmentation);
-	CPPUNIT_TEST_SUITE_END();
-public:
-
-	virtual void setUp()
+	cv::Mat imgRead = cv::imread("/home/arprice/Desktop/platypus.jpg");
+	if (imgRead.rows * imgRead.cols > 200000)
 	{
-		//srand(time(NULL));
-		srand(10);
+		cv::resize(imgRead, imgRead,  cv::Size(imgRead.cols / 2, imgRead.rows / 2));
 	}
+	//		cv::resize(imgRead, imgRead, cv::Size(640, 480));
 
-	virtual void tearDown () {}
+	cv::namedWindow("Original", cv::WINDOW_NORMAL);
+	cv::imshow("Original", imgRead);
+	cv::waitKey();
 
-	void TestImageSegmentation()
-	{
-		cv::Mat imgRead = cv::imread("/home/arprice/Desktop/platypus.jpg");
-		if (imgRead.rows * imgRead.cols > 200000)
-		{
-			cv::resize(imgRead, imgRead,  cv::Size(imgRead.cols / 2, imgRead.rows / 2));
-		}
-//		cv::resize(imgRead, imgRead, cv::Size(640, 480));
-
-		cv::namedWindow("Original", cv::WINDOW_NORMAL);
-		cv::imshow("Original", imgRead);
-		cv::waitKey();
-
-		cv::Mat img;
-		int neighborhood = std::min(imgRead.rows, imgRead.cols) / 100;
-		if (neighborhood % 2 == 0) {neighborhood += 1;} // Only odd sized neighborhoods
-		int bilat = 50;
-		cv::bilateralFilter(imgRead, img, -1, bilat, neighborhood);
-		cv::medianBlur(img, img, neighborhood);
-		img.convertTo(img, CV_8UC3);
+	cv::Mat img;
+	int neighborhood = std::min(imgRead.rows, imgRead.cols) / 100;
+	if (neighborhood % 2 == 0) {neighborhood += 1;} // Only odd sized neighborhoods
+	int bilat = 50;
+	cv::bilateralFilter(imgRead, img, -1, bilat, neighborhood);
+	cv::medianBlur(img, img, neighborhood);
+	img.convertTo(img, CV_8UC3);
 
 //		cv::Mat img(2,3,CV_8UC3);
 //		img.at<cv::Vec3b>(0,0) = cv::Vec3b(1);
@@ -104,33 +85,34 @@ public:
 //		img.at<cv::Vec3b>(2,1) = cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random());
 //		img.at<cv::Vec3b>(2,2) = cv::Vec3b((uchar)random(), (uchar)random(), (uchar)random());
 
+	cv::imshow("Original", img);
+	cv::waitKey();
 
-		cv::imshow("Original", img);
+	cv::namedWindow("Final", cv::WINDOW_NORMAL);
+	cv::namedWindow("FinalHSV", cv::WINDOW_NORMAL);
+
+	cv::Mat display, displayHSV;
+
+	ap::Segmentation s;
+	for (int i = 10; i < 6000; i *= 5)
+	{
+		cv::Mat imgHSV;
+		cv::cvtColor(img, imgHSV, CV_BGR2HSV);
+
+		ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffSTD);
+		ap::recolorSegmentation(img, display, s, true);
+
+		ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffHSV);
+		ap::recolorSegmentation(img, displayHSV, s, true);
+
+		cv::imshow("Final", display);
+		cv::imshow("FinalHSV", displayHSV);
 		cv::waitKey();
-
-		cv::namedWindow("Final", cv::WINDOW_NORMAL);
-		cv::namedWindow("FinalHSV", cv::WINDOW_NORMAL);
-
-		cv::Mat display, displayHSV;
-
-		ap::Segmentation s;
-		for (int i = 10; i < 6000; i *= 5)
-		{
-			cv::Mat imgHSV;
-			cv::cvtColor(img, imgHSV, CV_BGR2HSV);
-
-			ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffSTD);
-			ap::recolorSegmentation(img, display, s, true);
-
-			ap::segmentFelzenszwalb(img, s, (img.rows * img.cols) / i, (img.rows * img.cols) / 500, &ap::diffHSV);
-			ap::recolorSegmentation(img, displayHSV, s, true);
-
-			cv::imshow("Final", display);
-			cv::imshow("FinalHSV", displayHSV);
-			cv::waitKey();
-		}
 	}
+}
 
-};
-
-CPPUNIT_TEST_SUITE_REGISTRATION(TestSegmentation);
+int main(int argc, char** argv)
+{
+	TestImageSegmentation();
+	return 0;
+}
