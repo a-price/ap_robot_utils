@@ -43,6 +43,8 @@
 #include <RobotKin/Robots/Triage.h>
 #include <RobotKin/urdf_parsing.h>
 
+#include <fstream>
+
 namespace ap
 {
 
@@ -106,6 +108,54 @@ ap::shared_ptr<RobotKin::Robot> loadRKRobot(const ros::NodeHandle& nh)
 	else
 	{
 		ROS_ERROR_STREAM("No solver found for '" << robotModel->getName() << "'.");
+	}
+
+	return rkRobot;
+}
+
+ap::shared_ptr<RobotKin::Robot> loadRKRobot(const std::string& filename)
+{
+	std::string expandedFilename = parsePackageURL(filename);
+
+	ap::shared_ptr<urdf::Model> robotModel(new urdf::Model);
+
+	std::ifstream ifs(expandedFilename);
+	std::string robotDescription((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+
+	if (!robotModel->initString(robotDescription))
+	{
+		throw std::runtime_error("Unable to parse URDF model.");
+	}
+	else
+	{
+//		ROS_INFO_STREAM("Loaded URDF model '" << robotModel->getName() << "'.");
+	}
+
+	ap::shared_ptr<RobotKin::Robot> rkRobot(new RobotKin::Robot);
+	RobotKin::URDF::loadURDFModel(*rkRobot, robotModel);
+
+	RobotKin::Linkage* pLinkage = &rkRobot->linkage("base_link"); // Default to "base_link"
+	if ("invalid" == pLinkage->name())
+	{
+		if (rkRobot->linkages().size() < 1)
+		{
+			throw std::runtime_error("No linkages in robot model.");
+		}
+		else
+		{
+			pLinkage = rkRobot->linkages()[0];
+		}
+	}
+
+	std::map<std::string, RobotKin::AnalyticalIK>::const_iterator iter = RobotKin::KNOWN_AIK_SOLVERS.find(robotModel->getName());
+	if (RobotKin::KNOWN_AIK_SOLVERS.end() != iter)
+	{
+		pLinkage->analyticalIK = iter->second;
+//		ROS_INFO_STREAM("Loaded AIK solver for '" << pLinkage->name() << "'.");
+	}
+	else
+	{
+//		ROS_ERROR_STREAM("No solver found for '" << robotModel->getName() << "'.");
 	}
 
 	return rkRobot;

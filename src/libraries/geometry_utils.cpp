@@ -71,7 +71,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 
 	if (weights != NULL && weights->size() == n)
 	{
-		float totalWeight;
+		float totalWeight = 0;
 		for (int i = 0; i < n; i++)
 		{
 			Eigen::Quaternion<ap::decimal>& q = qs[i];

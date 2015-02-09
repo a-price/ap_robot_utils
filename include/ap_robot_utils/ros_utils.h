@@ -50,6 +50,8 @@ std::string parsePackageURL(const std::string url);
 
 ap::shared_ptr<RobotKin::Robot> loadRKRobot(const ros::NodeHandle& nh);
 
+ap::shared_ptr<RobotKin::Robot> loadRKRobot(const std::string& filename);
+
 } // namespace ap
 
 #endif // ROS_UTILS_H

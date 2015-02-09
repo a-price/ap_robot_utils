@@ -110,7 +110,7 @@ shared_ptr<T>& OrientationBins<T>::search(const Quaternion& query)
 	ap::decimal minAngle = std::numeric_limits<ap::decimal>::max();
 
 	std::array<Quaternion, NUM_90DEG_ORIENTATIONS>::const_iterator iter, endIter = BaseOrientations::getInstance()->orientations().end();
-	bin_iterator targetIter, finalIter;
+	bin_iterator targetIter, finalIter = mBins.begin();
 
 	for (iter = BaseOrientations::getInstance()->orientations().begin(), targetIter = mBins.begin();
 	     iter != endIter;
