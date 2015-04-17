@@ -153,8 +153,8 @@ public:
 
 
 	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, ros::NodeHandle nh)
-		: mRobotModel(robotModel),
-		  mNH(nh)
+		: mNH(nh),
+		  mRobotModel(robotModel)
 	{
 		this->mCameraFrameID = camera_frame_id;
 		this->mCameraModel = createIdealCamera();
@@ -171,9 +171,9 @@ public:
 	}
 
 	MeshProjector(urdf::Model& robotModel, const std::string camera_frame_id, ros::NodeHandle nh, const std::vector<std::string>& frame_ids)
-		: mRobotModel(robotModel),
+		: mMeshFrameIDs(frame_ids),
 		  mNH(nh),
-		  mMeshFrameIDs(frame_ids)
+		  mRobotModel(robotModel)
 	{
 		this->mCameraFrameID = camera_frame_id;
 		this->mCameraModel = createIdealCamera();
@@ -198,7 +198,7 @@ public:
 				continue;
 			}
 
-			boost::shared_ptr<urdf::Mesh>& mesh = (boost::shared_ptr<urdf::Mesh>&)link->visual->geometry;
+			const boost::shared_ptr<urdf::Mesh>& mesh = boost::dynamic_pointer_cast<urdf::Mesh>(link->visual->geometry);
 
 			try
 			{

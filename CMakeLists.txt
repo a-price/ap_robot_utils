@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
-set(BUILD_FLAGS "-std=c++0x -Wreturn-type -Wuninitialized")
+set(BUILD_FLAGS "-std=c++0x -Wreturn-type -Wall -Wextra -Wno-sign-compare")
 #SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
@@ -33,20 +33,20 @@ endif ($ENV{ROS_DISTRO} STREQUAL "indigo")
 
 ## System dependencies are found with CMake's conventions
 find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_INCLUDE_DIR})
+include_directories(SYSTEM ${OpenCV_INCLUDE_DIR})
 link_libraries(${OpenCV_LIBS})
 
 find_package(Eigen REQUIRED)
-include_directories(${EIGEN_INCLUDE_DIRS})
+include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 add_definitions(${EIGEN_DEFINITIONS})
 
 # /usr/local/lib/cmake/assimp-3.0/
 find_package(ASSIMP REQUIRED)
-include_directories(${ASSIMP_INCLUDE_DIR})
+include_directories(SYSTEM ${ASSIMP_INCLUDE_DIR})
 link_libraries(${ASSIMP_LIBRARIES})
 
 find_package(CppUnit)
-include_directories(${CPPUNIT_INCLUDE_DIR})
+include_directories(SYSTEM ${CPPUNIT_INCLUDE_DIR})
 link_libraries(${CPPUNIT_LIBRARIES})
 
 ###################################
@@ -66,13 +66,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS})
 link_libraries(${catkin_LIBRARIES})
 
 file(GLOB headers "include/${PROJECT_NAME}/*.h")
 
 file(GLOB felz_source "src/libraries/felzenszwalb/*.h")
-include_directories("src/libraries/felzenszwalb")
+include_directories(include "src/libraries/felzenszwalb")
 ## Declare a cpp library
 add_library(${PROJECT_NAME}
   src/libraries/probability_utils.cpp

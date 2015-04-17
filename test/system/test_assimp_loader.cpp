@@ -278,7 +278,7 @@ void init()
 	transformedScenes.insert(MeshMap::value_type("cube", meshAItoAP(scene)));
 }
 
-int main(int argc, char** argv)
+int main()
 {
 	mCameraModel = createIdealCamera();
 	mMeshFrameIDs.push_back("cube");

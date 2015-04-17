@@ -171,7 +171,6 @@ Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 	}
 
 	// Check if inside of triangle
-	bool insideTriangle = true;
 	for (int i = 0; i < 3; i++)
 	{
 		Eigen::Vector3 v1 = (*t.vertices[i]) - r.point;
@@ -181,7 +180,6 @@ Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 		float d = r.point.dot(tempNorm);
 		if (result.dot(tempNorm) > d)
 		{
-			insideTriangle = false;
 			result.x() = NAN;
 			result.y() = NAN;
 			result.z() = NAN;

@@ -111,7 +111,7 @@ void TestImageSegmentation()
 	}
 }
 
-int main(int argc, char** argv)
+int main()
 {
 	TestImageSegmentation();
 	return 0;

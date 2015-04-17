@@ -80,8 +80,8 @@ public:
 		point = normal * distance;
 	}
 
-	Eigen::Vector3 point;
 	Eigen::Vector3 normal;
+	Eigen::Vector3 point;
 	float distance;
 };
 
