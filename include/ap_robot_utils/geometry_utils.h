@@ -142,7 +142,12 @@ public:
 	class Face
 	{
 	public:
-		Face() {}
+		Face()
+		{
+			vertices[0] = 0;
+			vertices[1] = 0;
+			vertices[2] = 0;
+		}
 		Face(int a, int b, int c)
 		{
 			vertices[0] = a;
