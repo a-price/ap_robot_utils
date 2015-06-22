@@ -1,13 +1,13 @@
 /**
- * \file DHParams.cpp
+ * \file symmetry.cpp
  * \brief
  *
  * \author Andrew Price
- * \date 8 6, 2014
+ * \date 2015-5-9
  *
  * \copyright
  *
- * Copyright (c) 2014, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * This file is provided under the following "BSD-style" License:
@@ -35,30 +35,4 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ap_robot_utils/DHParams.h"
 
-DHParams::DHParams(const float dIn, const float aIn, const float rIn, const float tIn)
-{
-	this->d = dIn;
-	this->alpha = aIn;
-	this->r = rIn;
-	this->thetaOffset = tIn;
-
-	this->cosa = cos(aIn);
-	this->sina = sin(aIn);
-}
-
-Eigen::Matrix4f DHParams::toRotationMatrix(const float q) const
-{
-	Eigen::Matrix4f trans;
-
-	float cosT = cos(q + thetaOffset);
-	float sinT = sin(q + thetaOffset);
-
-	trans << cosT, -sinT*cosa, sinT*sina, r*cosT,
-	         sinT, cosT*cosa, -cosT*sina, r*sinT,
-	         0, sina, cosa, d,
-	         0, 0, 0, 1;
-
-	return trans;
-}

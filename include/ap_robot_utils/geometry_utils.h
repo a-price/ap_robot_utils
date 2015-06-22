@@ -59,6 +59,8 @@ typedef Eigen::Vector3 Point;
 class Ray
 {
 public:
+	Ray() {}
+	Ray(const Eigen::Vector3& p, const Eigen::Vector3& v) : point(p), vector(v) {}
 	Eigen::Vector3 point;
 	Eigen::Vector3 vector;
 };
@@ -162,10 +164,16 @@ public:
 	std::deque<Face> faces;
 
 	float volume() const;
+
+	Eigen::Vector3 com() const;
+	Eigen::Vector3 cobb() const;
 };
 
 // Transform a mesh
 Mesh operator* (const Eigen::Isometry3& t, const Mesh& a);
+
+Mesh operator+ (const Mesh& a, const Eigen::Vector3& p);
+Mesh operator- (const Mesh& a, const Eigen::Vector3& p);
 
 std::ostream& operator <<(std::ostream& s, Ray r);
 

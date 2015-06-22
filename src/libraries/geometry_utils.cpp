@@ -64,7 +64,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 	const int n = qs.size();
 	Eigen::Vector4 qVec;
 
-	for (int i = 0; i < n; i++)
+	for (int i = 0; i < n; ++i)
 	{
 		qs[i].normalize();
 	}
@@ -72,7 +72,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 	if (weights != NULL && weights->size() == n)
 	{
 		float totalWeight = 0;
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < n; ++i)
 		{
 			Eigen::Quaternion<ap::decimal>& q = qs[i];
 			getQuaternionDataVector(q, qVec);
@@ -84,7 +84,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 	}
 	else
 	{
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < n; ++i)
 		{
 			Eigen::Quaternion<ap::decimal>& q = qs[i];
 			getQuaternionDataVector(q, qVec);
@@ -111,11 +111,27 @@ Mesh operator* (const Eigen::Isometry3& t, const Mesh& a)
 {
 	Mesh newMesh;
 	newMesh.faces.insert(newMesh.faces.begin(), a.faces.begin(), a.faces.end());
-	for (int i = 0; i < a.vertices.size(); i++)
+	for (int i = 0; i < a.vertices.size(); ++i)
 	{
 		newMesh.vertices.push_back(t * a.vertices[i]);
 	}
 	return newMesh;
+}
+
+Mesh operator+ (const Mesh& a, const Eigen::Vector3& p)
+{
+	Mesh newMesh;
+	newMesh.faces.insert(newMesh.faces.begin(), a.faces.begin(), a.faces.end());
+	for (int i = 0; i < a.vertices.size(); ++i)
+	{
+		newMesh.vertices.push_back(p + a.vertices[i]);
+	}
+	return newMesh;
+}
+
+Mesh operator- (const Mesh& a, const Eigen::Vector3& p)
+{
+	return a + (-p);
 }
 
 std::ostream& operator <<(std::ostream& s, Ray r)
@@ -171,7 +187,7 @@ Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 	}
 
 	// Check if inside of triangle
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 3; ++i)
 	{
 		Eigen::Vector3 v1 = (*t.vertices[i]) - r.point;
 		Eigen::Vector3 v2 = (*t.vertices[(i+1)%3]) - r.point;
@@ -193,9 +209,9 @@ Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 // TODO: Fix for non-convex surfaces
 float Mesh::volume() const
 {
-	int n = faces.size();
+	const int n = faces.size();
 
-	float volume = 0;
+	float vol = 0;
 	// Compute the signed volume of each facet to the origin
 	for (int i = 0; i < n; ++i)
 	{
@@ -205,10 +221,40 @@ float Mesh::volume() const
 
 		float signedVol = (p1).dot((p2).cross(p3)) / 6.0f;
 
-		volume += fabs(signedVol);
+		vol += fabs(signedVol);
 	}
 
-	return fabs(volume);
+	return fabs(vol);
+}
+
+Eigen::Vector3 Mesh::com() const
+{
+	const int n = faces.size();
+	Eigen::Vector3 c = Eigen::Vector3::Zero();
+	for (int i = 0; i < n; ++i)
+	{
+		c += vertices[i];
+	}
+	return c / static_cast<ap::decimal>(n);
+}
+
+Eigen::Vector3 Mesh::cobb() const
+{
+	const int n = faces.size();
+	if (0 == n) { return Eigen::Vector3::Zero(); }
+
+	Eigen::Vector3 min = vertices[0];
+	Eigen::Vector3 max = vertices[0];
+	for (int i = 0; i < n; ++i)
+	{
+		const Eigen::Vector3& v = vertices[i];
+		for (int j = 0; j < 3; ++j)
+		{
+			if (v[j] < min[j]) { min[j] = v[j]; }
+			if (v[j] > max[j]) { max[j] = v[j]; }
+		}
+	}
+	return (min+max) / 2.0;
 }
 
 }

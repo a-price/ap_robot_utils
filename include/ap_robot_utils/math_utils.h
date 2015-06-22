@@ -52,6 +52,13 @@ inline ap::decimal randbetween(ap::decimal min, ap::decimal max)
 
 namespace Eigen
 {
+/**
+ * @brief pseudoInverse Performs the Moore-Penrose pseudo-inverse
+ * @param a The matrix to invert
+ * @param result The inverted matrix
+ * @param epsilon Threshold below which to zero-out singular values
+ * @return
+ */
 template<typename _Matrix_Type_>
 bool pseudoInverse(const _Matrix_Type_ &a, _Matrix_Type_ &result, double
 				   epsilon = std::numeric_limits<typename _Matrix_Type_::Scalar>::epsilon())
