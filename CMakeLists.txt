@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ap_robot_utils)
 set(BUILD_FLAGS "-std=c++0x -Wreturn-type -Wall -Wextra -Wno-sign-compare")
-#SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_BUILD_TYPE "RelWithDebInfo")
+#set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
 # Add additional CMake files
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")

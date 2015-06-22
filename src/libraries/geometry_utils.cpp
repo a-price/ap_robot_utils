@@ -39,6 +39,17 @@
 #include <cmath>
 #include <Eigen/SVD>
 
+/////// Import Code
+#include <assimp/mesh.h>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/Importer.hpp>
+
+#include <set>
+#include <stdexcept>
+#include <vector>
+#include <deque>
+
 namespace ap
 {
 void setQuaternionDataVector(Eigen::Quaternion<ap::decimal>& q, const Eigen::Vector4& v)
@@ -58,7 +69,7 @@ void getQuaternionDataVector(const Eigen::Quaternion<ap::decimal>& q, Eigen::Vec
 }
 
 Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
-									  std::vector<float>* weights)
+                                                  std::vector<ap::decimal>* weights)
 {
 	Eigen::Matrix4 accumulator = Eigen::Matrix4::Zero();
 	const int n = qs.size();
@@ -71,7 +82,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 
 	if (weights != NULL && weights->size() == n)
 	{
-		float totalWeight = 0;
+		ap::decimal totalWeight = 0;
 		for (int i = 0; i < n; ++i)
 		{
 			Eigen::Quaternion<ap::decimal>& q = qs[i];
@@ -91,7 +102,7 @@ Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
 			accumulator += qVec * qVec.transpose();
 		}
 
-		accumulator /= (float)n;
+		accumulator /= (ap::decimal)n;
 	}
 
 	Eigen::JacobiSVD<Eigen::Matrix4> svd(accumulator, Eigen::ComputeFullU);
@@ -168,7 +179,7 @@ std::ostream& operator <<(std::ostream& s, Mesh r)
 	return s;
 }
 
-Eigen::Vector3 intersectRayPlane(Ray r, Plane p)
+Eigen::Vector3 intersectRayPlane(const Ray& r, const Plane& p)
 {
 	ap::decimal dist = -(r.point.dot(p.normal) - p.distance)/(r.vector.dot(p.normal));
 	if (dist == 0) { return r.point; } // Plane contains ray origin
@@ -176,7 +187,7 @@ Eigen::Vector3 intersectRayPlane(Ray r, Plane p)
 	return intersection;
 }
 
-Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
+Eigen::Vector3 intersectRayTriangle(const Ray& r, const Triangle& t)
 {
 	// Find intersection of plane and ray
 	Eigen::Vector3 result = intersectRayPlane(r, t.getPlane());
@@ -193,25 +204,33 @@ Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t)
 		Eigen::Vector3 v2 = (*t.vertices[(i+1)%3]) - r.point;
 		Eigen::Vector3 tempNorm = v2.cross(v1).normalized();
 
-		float d = r.point.dot(tempNorm);
+		ap::decimal d = r.point.dot(tempNorm);
 		if (result.dot(tempNorm) > d)
 		{
 			result.x() = NAN;
 			result.y() = NAN;
 			result.z() = NAN;
-			break;
+			return result;
 		}
+	}
+
+	// Check if in direction of ray
+	if (r.vector.dot(result - r.point) < 0)
+	{
+		result.x() = NAN;
+		result.y() = NAN;
+		result.z() = NAN;
 	}
 
 	return result;
 }
 
 // TODO: Fix for non-convex surfaces
-float Mesh::volume() const
+ap::decimal Mesh::volume() const
 {
 	const int n = faces.size();
 
-	float vol = 0;
+	ap::decimal vol = 0;
 	// Compute the signed volume of each facet to the origin
 	for (int i = 0; i < n; ++i)
 	{
@@ -219,7 +238,7 @@ float Mesh::volume() const
 		const Eigen::Vector3 p2 = vertices[faces[i].vertices[1]];
 		const Eigen::Vector3 p3 = vertices[faces[i].vertices[2]];
 
-		float signedVol = (p1).dot((p2).cross(p3)) / 6.0f;
+		ap::decimal signedVol = (p1).dot((p2).cross(p3)) / 6.0f;
 
 		vol += fabs(signedVol);
 	}
@@ -255,6 +274,221 @@ Eigen::Vector3 Mesh::cobb() const
 		}
 	}
 	return (min+max) / 2.0;
+}
+
+void Mesh::aabb(ap::decimal& xMin, ap::decimal& yMin, ap::decimal& zMin, ap::decimal& xMax, ap::decimal& yMax, ap::decimal& zMax) const
+{
+	xMin = 1e9; yMin = 1e9; zMin = 1e9;
+	xMax = 0; yMax = 0; zMax = 0;
+	const int numVertices = this->vertices.size();
+	for (int i = 0; i < numVertices; ++i)
+	{
+		const Eigen::Vector3 v = this->vertices[i];
+		if (v.x() < xMin) { xMin = v.x(); }
+		if (v.x() > xMax) { xMax = v.x(); }
+		if (v.y() < yMin) { yMin = v.y(); }
+		if (v.y() > yMax) { yMax = v.y(); }
+		if (v.z() < zMin) { zMin = v.z(); }
+		if (v.z() > zMax) { zMax = v.z(); }
+	}
+}
+
+void Mesh::boundingSphere(ap::decimal& x, ap::decimal& y, ap::decimal& z, ap::decimal& r) const
+{
+	ap::decimal xMin,  yMin,  zMin,  xMax,  yMax,  zMax;
+	this->aabb(xMin,  yMin,  zMin,  xMax,  yMax,  zMax);
+	x = (xMax + xMin) / 2.0f;
+	y = (yMax + yMin) / 2.0f;
+	z = (zMax + zMin) / 2.0f;
+
+	ap::decimal dX, dY, dZ;
+	dX = xMax - xMin;
+	dY = yMax - yMin;
+	dZ = zMax - zMin;
+
+	r = sqrt(dX*dX + dY*dY + dZ*dZ) / 2.0f;
+}
+
+/*********************************************************************************/
+/* Model Import Code                                                             */
+/*********************************************************************************/
+
+typedef std::pair<uint, uint> IdxPair;
+
+struct compareVectors
+{
+	bool operator() (const aiVector3D& s, const aiVector3D& r)
+	{
+		if (s.Length() < r.Length())
+		{
+			return true;
+		}
+		else if (s.Length() == r.Length())
+		{
+			if (s.x + s.y + s.z < r.x + r.y + r.z)
+			{
+				return true;
+			}
+			else if (s.x + s.y + s.z == r.x + r.y + r.z)
+			{
+				if (s.x < r.x)
+				{
+					return true;
+				}
+				else if(s.x == r.x)
+				{
+					if (s.y < r.y)
+					{
+						return true;
+					}
+					else if(s.y == r.y)
+					{
+						return s.z < r.z;
+					}
+					else
+					{
+						return false;
+					}
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				return false;
+			}
+		}
+		return false;
+
+	}
+};
+
+typedef std::set<aiVector3D, compareVectors> VectorSet;
+
+
+uint getIteratorIndex(const std::vector<VectorSet::iterator>& vec, const VectorSet::iterator& iter)
+{
+	for (uint i = 0; i < vec.size(); ++i)
+	{
+		if (vec[i] == iter)
+		{
+			return i;
+		}
+	}
+
+	std::cerr << "ERROR: Target not found." << std::endl;
+
+	return 0;
+}
+
+bool meshAItoAP(const aiScene* inScene, Mesh* outMesh)
+{
+	// Find a triangle mesh
+	int triMeshIdx = 0;
+	for (int i = 0; i < inScene->mNumMeshes; i++)
+	{
+		if (inScene->mMeshes[i]->HasFaces() && inScene->mMeshes[i]->mFaces[0].mNumIndices == 3)
+		{
+			triMeshIdx = i;
+		}
+	}
+
+	aiMesh* pMesh = inScene->mMeshes[triMeshIdx];
+
+	// Copy vertices
+	VectorSet vertices;
+
+	std::pair<VectorSet::iterator, bool> insertResult;
+	std::vector<VectorSet::iterator> indexToSetIterator;
+	std::vector<int> indexMap;
+
+	//NB: do this twice, iterators move around on insert
+	for (int i = 0; i < pMesh->mNumVertices; i++)
+	{
+		vertices.insert(pMesh->mVertices[i]);
+	}
+
+	for (int i = 0; i < pMesh->mNumVertices; i++)
+	{
+		insertResult = vertices.insert(pMesh->mVertices[i]);
+		indexMap.push_back(std::distance(vertices.begin(), insertResult.first));
+		indexToSetIterator.push_back(insertResult.first);
+	}
+
+	// Create set iterator to index mapping
+	VectorSet::iterator first = vertices.begin(), last = vertices.end();
+	for (VectorSet::iterator iter = first; iter != last; ++iter)
+	{
+		outMesh->vertices.push_back(Eigen::Vector3(iter->x, iter->y, iter->z));
+	}
+
+	assert(NULL != pMesh->mFaces);
+	outMesh->faces.resize(pMesh->mNumFaces);
+
+	assert(pMesh->HasNormals());
+	// Copy Faces (lists of vertex indices)
+	for (int i = 0; i < pMesh->mNumFaces; ++i)
+	{
+		if (3 != pMesh->mFaces[i].mNumIndices)
+		{
+			std::cerr << "WTF?" << std::endl;
+			continue;
+		}
+
+		Eigen::Vector3 c = Eigen::Vector3::Zero();
+		for (int j = 0; j < 3; ++j)
+		{
+			uint originalIdx = pMesh->mFaces[i].mIndices[j];
+			int shiftedIdx = std::distance(vertices.begin(), indexToSetIterator[originalIdx]);
+
+			outMesh->faces[i].vertices[j] = shiftedIdx;
+			c += outMesh->vertices[shiftedIdx];
+		}
+
+		// NB: Normals are generated per-vertex, not per face...
+		aiVector3D normal = pMesh->mNormals[pMesh->mFaces[i].mIndices[0]].Normalize();
+		outMesh->faces[i].normal = Eigen::Vector3(normal.x, normal.y, normal.z);
+		outMesh->faces[i].center = c / 3.0;
+	}
+
+	return true;
+}
+
+ap::Mesh* loadMesh(const std::string filename)
+{
+	Assimp::Importer importer;
+	const int postprocessingFlags =
+			aiProcess_JoinIdenticalVertices |
+			aiProcess_GenNormals |
+			aiProcess_ImproveCacheLocality |
+			aiProcess_Triangulate |
+			aiProcess_OptimizeGraph |
+			aiProcess_OptimizeMeshes |
+			//aiProcess_FindDegenerates |
+			aiProcess_FixInfacingNormals |
+			aiProcess_SortByPType;
+
+	const aiScene* pScene = importer.ReadFile(filename.c_str(),
+											  aiProcess_ValidateDataStructure |
+											  postprocessingFlags);
+
+	ap::Mesh* pMesh = new ap::Mesh();
+
+	if (pScene == NULL)
+	{
+		std::cerr << importer.GetErrorString() << std::endl;
+		return nullptr;
+	}
+
+	if (!meshAItoAP(pScene, pMesh))
+	{
+		std::cerr << "Failed to load mesh: " << filename << std::endl;
+		return nullptr;
+	}
+
+	return pMesh;
 }
 
 }

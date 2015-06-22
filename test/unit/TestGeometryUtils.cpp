@@ -150,8 +150,20 @@ public:
 		std::cerr << "Expected: " << (Eigen::Vector3::Ones() * NAN).transpose() << std::endl;
 		std::cerr << "Actual: " << actual.transpose() << std::endl;
 
-		// TODO: Test Perpendicular, nonintersecting triangle
-		//
+		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+
+		// Test Perpendicular, nonintersecting triangle
+		ap::Triangle t3(Eigen::Vector3(1, -2, -2),
+		                Eigen::Vector3(1, -2, -1),
+		                Eigen::Vector3(1, -1, -1));
+		r.vector = Eigen::Vector3::UnitX();
+		actual = ap::intersectRayTriangle(r, t3);
+
+		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+
+		// Test perpendicular triangle behind ray source
+		r.vector = -Eigen::Vector3::UnitX();
+		actual = ap::intersectRayTriangle(r, t1);
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 	}

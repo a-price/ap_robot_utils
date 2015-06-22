@@ -70,6 +70,7 @@ typedef Matrix<ap::decimal, 6, Eigen::Dynamic> Matrix6X;
 typedef Matrix<ap::decimal, Eigen::Dynamic, 3> MatrixX3;
 typedef Matrix<ap::decimal, Eigen::Dynamic, 6> MatrixX6;
 typedef Matrix<ap::decimal, 6, 6> Matrix6;
+typedef Eigen::Matrix<ap::decimal, Eigen::Dynamic, Eigen::Dynamic> MatrixX;
 
 typedef Transform<ap::decimal,2,Isometry> Isometry2;
 typedef Transform<ap::decimal,3,Isometry> Isometry3;

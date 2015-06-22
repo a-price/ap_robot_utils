@@ -50,7 +50,7 @@ namespace ap
 
 typedef std::vector<Eigen::Quaternion<ap::decimal>, Eigen::aligned_allocator<Eigen::Quaternion<ap::decimal> > > QuaternionStdVector;
 Eigen::Quaternion<ap::decimal> averageQuaternions(QuaternionStdVector& qs,
-									  std::vector<float>* weights = NULL);
+                                                  std::vector<ap::decimal>* weights = NULL);
 
 
 
@@ -75,7 +75,7 @@ public:
 		distance = normal.dot(point);
 	}
 
-	Plane(const Eigen::Vector3& n, float d)
+	Plane(const Eigen::Vector3& n, ap::decimal d)
 		: normal(n.normalized()),
 		  distance(d)
 	{
@@ -84,7 +84,7 @@ public:
 
 	Eigen::Vector3 normal;
 	Eigen::Vector3 point;
-	float distance;
+	ap::decimal distance;
 };
 
 class Triangle
@@ -107,7 +107,7 @@ public:
 		vertices.push_back(&(this->vertexC));
 	}
 
-	Eigen::Vector3 getNormal()
+	Eigen::Vector3 getNormal() const
 	{
 		Eigen::Vector3 ab = vertexA - vertexB;
 		Eigen::Vector3 ac = vertexA - vertexC;
@@ -122,7 +122,7 @@ public:
 		return retVal;
 	}
 
-	Plane getPlane()
+	Plane getPlane() const
 	{
 		Eigen::Vector3 normal = getNormal();
 		Plane p(normal, vertexA);
@@ -158,15 +158,21 @@ public:
 		}
 
 		unsigned int vertices[3];
+
+		Eigen::Vector3 normal;
+		Eigen::Vector3 center;
 	};
 
 	std::deque<Eigen::Vector3, Eigen::aligned_allocator<Eigen::Vector3> > vertices;
 	std::deque<Face> faces;
 
-	float volume() const;
+	ap::decimal volume() const;
 
 	Eigen::Vector3 com() const;
 	Eigen::Vector3 cobb() const;
+
+	void aabb(ap::decimal& xMin, ap::decimal& yMin, ap::decimal& zMin, ap::decimal& xMax, ap::decimal& yMax, ap::decimal& zMax) const;
+	void boundingSphere(ap::decimal& x, ap::decimal& y, ap::decimal& z, ap::decimal& r) const;
 };
 
 // Transform a mesh
@@ -181,8 +187,10 @@ std::ostream& operator <<(std::ostream& s, Triangle tri);
 
 std::ostream& operator <<(std::ostream& s, Mesh r);
 
-Eigen::Vector3 intersectRayPlane(Ray r, Plane p);
-Eigen::Vector3 intersectRayTriangle(Ray r, Triangle t);
+Eigen::Vector3 intersectRayPlane(const Ray& r, const Plane& p);
+Eigen::Vector3 intersectRayTriangle(const Ray& r, const Triangle& t);
+
+ap::Mesh* loadMesh(const std::string filename);
 
 
 }
