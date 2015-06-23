@@ -202,10 +202,12 @@ Eigen::Vector3 intersectRayTriangle(const Ray& r, const Triangle& t)
 	{
 		Eigen::Vector3 v1 = (*t.vertices[i]) - r.point;
 		Eigen::Vector3 v2 = (*t.vertices[(i+1)%3]) - r.point;
+		Eigen::Vector3 v3 = (*t.vertices[(i+2)%3]) - r.point;
 		Eigen::Vector3 tempNorm = v2.cross(v1).normalized();
+		if (v3.dot(tempNorm) < 0) { tempNorm = -tempNorm; }
 
 		ap::decimal d = r.point.dot(tempNorm);
-		if (result.dot(tempNorm) > d)
+		if (result.dot(tempNorm) < d)
 		{
 			result.x() = NAN;
 			result.y() = NAN;
@@ -276,21 +278,32 @@ Eigen::Vector3 Mesh::cobb() const
 	return (min+max) / 2.0;
 }
 
-void Mesh::aabb(ap::decimal& xMin, ap::decimal& yMin, ap::decimal& zMin, ap::decimal& xMax, ap::decimal& yMax, ap::decimal& zMax) const
+void Mesh::computeAABB()
 {
-	xMin = 1e9; yMin = 1e9; zMin = 1e9;
-	xMax = 0; yMax = 0; zMax = 0;
+	minCoord = Eigen::Vector3( std::numeric_limits<ap::decimal>::infinity(),
+	                           std::numeric_limits<ap::decimal>::infinity(),
+	                           std::numeric_limits<ap::decimal>::infinity());
+	maxCoord = Eigen::Vector3(-std::numeric_limits<ap::decimal>::infinity(),
+	                          -std::numeric_limits<ap::decimal>::infinity(),
+	                          -std::numeric_limits<ap::decimal>::infinity());
+
 	const int numVertices = this->vertices.size();
 	for (int i = 0; i < numVertices; ++i)
 	{
-		const Eigen::Vector3 v = this->vertices[i];
-		if (v.x() < xMin) { xMin = v.x(); }
-		if (v.x() > xMax) { xMax = v.x(); }
-		if (v.y() < yMin) { yMin = v.y(); }
-		if (v.y() > yMax) { yMax = v.y(); }
-		if (v.z() < zMin) { zMin = v.z(); }
-		if (v.z() > zMax) { zMax = v.z(); }
+		const Eigen::Vector3& v = this->vertices[i];
+		if (v.x() < minCoord.x()) { minCoord.x() = v.x(); }
+		if (v.x() > maxCoord.x()) { maxCoord.x() = v.x(); }
+		if (v.y() < minCoord.y()) { minCoord.y() = v.y(); }
+		if (v.y() > maxCoord.y()) { maxCoord.y() = v.y(); }
+		if (v.z() < minCoord.z()) { minCoord.z() = v.z(); }
+		if (v.z() > maxCoord.z()) { maxCoord.z() = v.z(); }
 	}
+}
+
+void Mesh::aabb(ap::decimal& xMin, ap::decimal& yMin, ap::decimal& zMin, ap::decimal& xMax, ap::decimal& yMax, ap::decimal& zMax) const
+{
+	xMin = minCoord.x(); yMin = minCoord.y(); zMin = minCoord.z();
+	xMax = maxCoord.x(); yMax = maxCoord.y(); zMax = maxCoord.z();
 }
 
 void Mesh::boundingSphere(ap::decimal& x, ap::decimal& y, ap::decimal& z, ap::decimal& r) const

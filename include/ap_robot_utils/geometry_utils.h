@@ -140,6 +140,10 @@ public:
 class Mesh
 {
 public:
+	Mesh()
+	    : minCoord(-NAN, -NAN, -NAN),
+	      maxCoord( NAN, NAN, NAN)
+	{}
 
 	class Face
 	{
@@ -171,8 +175,12 @@ public:
 	Eigen::Vector3 com() const;
 	Eigen::Vector3 cobb() const;
 
+	void computeAABB();
 	void aabb(ap::decimal& xMin, ap::decimal& yMin, ap::decimal& zMin, ap::decimal& xMax, ap::decimal& yMax, ap::decimal& zMax) const;
 	void boundingSphere(ap::decimal& x, ap::decimal& y, ap::decimal& z, ap::decimal& r) const;
+
+	Eigen::Vector3 minCoord;
+	Eigen::Vector3 maxCoord;
 };
 
 // Transform a mesh

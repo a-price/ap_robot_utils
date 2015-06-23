@@ -121,6 +121,28 @@ public:
 
 		CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
 
+
+		// Test different sequences of vertices a-b-c
+		std::vector<Eigen::Vector3> vertices = {a, b, c};
+		r.point = Eigen::Vector3::Zero();
+		r.vector = Eigen::Vector3::UnitX();
+		for (int dir = 0; dir < 2; ++dir)
+		{
+			for (int seq = 0; seq < 3; ++seq)
+			{
+				std::rotate(vertices.begin(), vertices.begin() + 1, vertices.end());
+				ap::Triangle t(vertices[0], vertices[1], vertices[2]);
+
+				// Test plane intersection
+				expected = Eigen::Vector3(1,0,0);
+				actual = ap::intersectRayTriangle(r, t);
+
+				CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
+			}
+			std::reverse(vertices.begin(), vertices.end());
+		}
+
+
 		// Test missed intersection
 		Eigen::Vector3 b2 = Eigen::Vector3(1,0,-2);
 		ap::Triangle t2(a, b2, c);
