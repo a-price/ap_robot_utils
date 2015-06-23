@@ -49,6 +49,7 @@ class TestOctree : public CppUnit::TestFixture
 	CPPUNIT_TEST(TestQuadtreeSearch);
 	CPPUNIT_TEST(TestOctreeSearch);
 	CPPUNIT_TEST(TestDrillDown);
+	CPPUNIT_TEST(TestCondense);
 	CPPUNIT_TEST(TestLeafIteration);
 	CPPUNIT_TEST_SUITE_END();
 public:
@@ -107,6 +108,29 @@ public:
 		query = Eigen::Vector3(0.2, 0.1, -0.3);
 		target = ot->search(query);
 		std::cout << target->mCenter << "\n" << target->mHasChildren << std::endl;
+	}
+
+	void TestCondense()
+	{
+		ap::shared_ptr<ap::Octree::Octree<float> > ot(new ap::Octree::Octree<float>() );
+		ot->expand(3);
+		ot->condense();
+		CPPUNIT_ASSERT(!ot->mTree->mHasChildren);
+		CPPUNIT_ASSERT(ap::shared_ptr<ap::Octree::Element<float> >() == ot->mTree->mParent);
+
+		Eigen::Vector3 query(0.5, 0.1, -0.8);
+		ap::shared_ptr<ap::Octree::Element<float> > target = ot->search(query, 3, true);
+
+		for (int i = 0; i < 8; ++i)
+		{
+			target->mParent->mChildren[i]->mData = ap::shared_ptr<float>(new float(1.0));
+		}
+
+		ot->condense();
+		target = ot->search(query, -1, false);
+		CPPUNIT_ASSERT(2 == target->depth());
+		CPPUNIT_ASSERT(!target->mHasChildren);
+		CPPUNIT_ASSERT(1.0 == *target->mData);
 	}
 
 	void TestDrillDown()

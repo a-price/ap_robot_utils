@@ -73,6 +73,11 @@ public:
 	void expand(unsigned int levels = 1);
 
 	/**
+	 * @brief condense Recursively combine sibling leaves with equivalent values
+	 */
+	void condense();
+
+	/**
 	 * @brief Recursively removes leaves who have no data and no child nodes
 	 */
 	void prune();
@@ -84,6 +89,9 @@ public:
 	shared_ptr<Element> search(const Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
 
 	shared_ptr<Element> nextLeaf(const int startChild = 0);
+
+	int depth() const;
+
 	void printPath();
 
 //protected:
@@ -106,6 +114,11 @@ public:
 	void expand(unsigned int levels = 1)
 	{
 		mTree->expand(levels);
+	}
+
+	void condense()
+	{
+		mTree->condense();
 	}
 
 	/**
@@ -168,6 +181,62 @@ void Element<T>::expand(unsigned int levels)
 				mChildren[i]->expand(levels - 1);
 			}
 		}
+	}
+}
+
+template <class T>
+void Element<T>::condense()
+{
+	// If all child data is equal, adopt data from first child and free the rest
+	if (mHasChildren)
+	{
+		// Condense children
+		for (int i = 0; i < 8; ++i)
+		{
+			mChildren[i]->condense();
+		}
+
+		// Can't condense this node if child has children
+		for (int i = 0; i < 8; ++i)
+		{
+			if (mChildren[i]->mHasChildren) { return; }
+		}
+
+		// Loop through and check if children are equivalent
+		if (shared_ptr<T>() == mChildren[0]->mData)
+		{
+			for (int i = 1; i < 8; ++i)
+			{
+				if (shared_ptr<T>() != mChildren[i]->mData)
+				{
+					// Some children have data, others don't, so abort condense
+					return;
+				}
+			}
+		}
+		else
+		{
+			for (int i = 1; i < 8; ++i)
+			{
+				if (shared_ptr<T>() == mChildren[i]->mData ||
+				    (*mChildren[0]->mData) != (*mChildren[i]->mData))
+				{
+					// Child data is not equivalent
+					return;
+				}
+			}
+		}
+
+		// Mode it here. Take first child's data, free others, set no children
+		this->mData = mChildren[0]->mData;
+
+		for (int i = 0; i < 8; ++i)
+		{
+			// Don't forget to delete the self-pointer in the child
+			mChildren[i]->mSelf = shared_ptr<Element<T> >();
+			mChildren[i] = shared_ptr<Element<T> >();
+		}
+		mHasChildren = false;
 	}
 }
 
@@ -275,6 +344,19 @@ shared_ptr<Element<T> > Element<T>::nextLeaf(const int startChild)
 		{
 			return mChildren[startChild]->nextLeaf(0);
 		}
+	}
+}
+
+template <class T>
+int Element<T>::depth() const
+{
+	if (shared_ptr<Element<T> >() == mParent)
+	{
+		return 0;
+	}
+	else
+	{
+		return mParent->depth() + 1;
 	}
 }
 
