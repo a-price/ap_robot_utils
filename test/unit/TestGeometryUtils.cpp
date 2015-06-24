@@ -93,6 +93,24 @@ public:
 		std::cerr << resultB.matrix() << std::endl << std::endl;
 	}
 
+	void getPossibleTriangles(std::vector<Eigen::Vector3> vertices, std::vector<ap::Triangle>& triangles)
+	{
+		assert(3 == vertices.size());
+
+		triangles.clear();
+		triangles.reserve(6);
+
+		for (int dir = 0; dir < 2; ++dir)
+		{
+			for (int seq = 0; seq < 3; ++seq)
+			{
+				std::rotate(vertices.begin(), vertices.begin() + 1, vertices.end());
+				triangles.push_back(ap::Triangle(vertices[0], vertices[1], vertices[2]));
+			}
+			std::reverse(vertices.begin(), vertices.end());
+		}
+	}
+
 	void TestRayIntersection()
 	{
 		ap::Ray r;
@@ -102,44 +120,36 @@ public:
 		Eigen::Vector3 a = Eigen::Vector3(1,1,-1);
 		Eigen::Vector3 b = Eigen::Vector3(1,0,1);
 		Eigen::Vector3 c = Eigen::Vector3(1,-1,-1);
-		ap::Triangle t1(a, b, c);
+//		ap::Triangle t1(a, b, c);
 
-		// Test plane intersection
-		ap::Point expected = Eigen::Vector3(1,0,0);
-		ap::Point actual = ap::intersectRayPlane(r, t1.getPlane());
+		ap::Point expected;
+		ap::Point actual;
 
-		std::cerr << "Expected: " << expected.transpose() << std::endl;
-		std::cerr << "Actual: " << actual.transpose() << std::endl;
+		std::vector<ap::Triangle> triangles;
 
-		CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
-
-		// Test true intersection
-		actual = ap::intersectRayTriangle(r, t1);
-
-		std::cerr << "Expected: " << expected.transpose() << std::endl;
-		std::cerr << "Actual: " << actual.transpose() << std::endl;
-
-		CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
-
-
-		// Test different sequences of vertices a-b-c
-		std::vector<Eigen::Vector3> vertices = {a, b, c};
-		r.point = Eigen::Vector3::Zero();
-		r.vector = Eigen::Vector3::UnitX();
-		for (int dir = 0; dir < 2; ++dir)
+		getPossibleTriangles(std::vector<Eigen::Vector3>({a, b, c}), triangles);
+		for (const ap::Triangle& t : triangles)
 		{
-			for (int seq = 0; seq < 3; ++seq)
+			// Test plane intersection
+			expected  = Eigen::Vector3(1,0,0);
+			actual = ap::intersectRayPlane(r, t.getPlane());
+
+			std::cerr << "Expected: " << expected.transpose() << std::endl;
+			std::cerr << "Actual: " << actual.transpose() << std::endl;
+
+			CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
+
+			// Test true intersection
+			actual = ap::intersectRayTriangle(r, t);
+
+			if (!((expected - actual).norm() < 0.000001))
 			{
-				std::rotate(vertices.begin(), vertices.begin() + 1, vertices.end());
-				ap::Triangle t(vertices[0], vertices[1], vertices[2]);
-
-				// Test plane intersection
-				expected = Eigen::Vector3(1,0,0);
-				actual = ap::intersectRayTriangle(r, t);
-
-				CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
+				std::cerr << "Error Incoming..." << std::endl;
+				std::cerr << "Expected: " << expected.transpose() << std::endl;
+				std::cerr << "Actual: " << actual.transpose() << std::endl;
 			}
-			std::reverse(vertices.begin(), vertices.end());
+			CPPUNIT_ASSERT((expected - actual).norm() < 0.000001);
+
 		}
 
 
@@ -155,8 +165,8 @@ public:
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 
 		// Test degenerate triangle
-		b2 = Eigen::Vector3(1,0,-1);
-		t2 = ap::Triangle(a, b2, c);
+		Eigen::Vector3 b3 = Eigen::Vector3(1,0,-1);
+		t2 = ap::Triangle(a, b3, c);
 
 		actual = ap::intersectRayTriangle(r, t2);
 
@@ -167,27 +177,53 @@ public:
 
 		// Test Parallel triangle
 		r.vector = Eigen::Vector3::UnitZ();
-		actual = ap::intersectRayPlane(r, t1.getPlane());
 
-		std::cerr << "Expected: " << (Eigen::Vector3::Ones() * NAN).transpose() << std::endl;
-		std::cerr << "Actual: " << actual.transpose() << std::endl;
+		getPossibleTriangles(std::vector<Eigen::Vector3>({a, b2, c}), triangles);
+		for (const ap::Triangle& t : triangles)
+		{
+			// Test plane intersection
+			actual = ap::intersectRayPlane(r, t.getPlane());
+
+			CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+
+			// Test true intersection
+			actual = ap::intersectRayTriangle(r, t);
+
+			assert(!std::isfinite(actual.x()));
+			CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+		}
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 
 		// Test Perpendicular, nonintersecting triangle
-		ap::Triangle t3(Eigen::Vector3(1, -2, -2),
-		                Eigen::Vector3(1, -2, -1),
-		                Eigen::Vector3(1, -1, -1));
 		r.vector = Eigen::Vector3::UnitX();
-		actual = ap::intersectRayTriangle(r, t3);
+
+		getPossibleTriangles(std::vector<Eigen::Vector3>({Eigen::Vector3(1, -2, -2),
+		                                                  Eigen::Vector3(1, -2, -1),
+		                                                  Eigen::Vector3(1, -1, -1)}),
+		                     triangles);
+		for (const ap::Triangle& t : triangles)
+		{
+			// Test true intersection
+			actual = ap::intersectRayTriangle(r, t);
+
+			CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+		}
 
 		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
 
 		// Test perpendicular triangle behind ray source
 		r.vector = -Eigen::Vector3::UnitX();
-		actual = ap::intersectRayTriangle(r, t1);
 
-		CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+		getPossibleTriangles(std::vector<Eigen::Vector3>({a, b, c}), triangles);
+		for (const ap::Triangle& t : triangles)
+		{
+			// Test true intersection
+			actual = ap::intersectRayTriangle(r, t);
+
+			CPPUNIT_ASSERT(!std::isfinite(actual.x()));
+		}
+
 	}
 
 };

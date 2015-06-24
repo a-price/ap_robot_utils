@@ -187,6 +187,68 @@ Eigen::Vector3 intersectRayPlane(const Ray& r, const Plane& p)
 	return intersection;
 }
 
+/**
+ * @brief mollerTrumbore Implements the Möller-Trumbore algorithm for computing
+ * @param[in] ray Ray to intersect
+ * @param[in] tri Triangle to intersect
+ * @param[out] t Distance along ray.vector from ray.origin to intersection
+ * @param[out] u Barycentric u-coordinate
+ * @param[out] v Barycentric v-coordinate
+ * @return True if ray intersects triangle
+ *
+ * Barycentric coordinates are a coordinate system defined by the vertices of the triangle.
+ * Convert to Cartesian point with: P = w*V_a + u*V_b + v*V_c.
+ * Also, remember Barycentric coordinates are degenerate, so w+u+v=1, leading to
+ * w = (1 - (u+v)).
+ */
+bool mollerTrumbore(const Ray& ray, const Triangle& tri,
+                    float& t, float& u, float& v)
+{
+	Eigen::Vector3 e1 = tri.vertexB - tri.vertexA;
+	Eigen::Vector3 e2 = tri.vertexC - tri.vertexA;
+
+	Eigen::Vector3 p = ray.vector.cross(e2);
+	ap::decimal det = e1.dot(p);
+
+	// Optional Culling can be done here
+
+	if (fabs(det) < 1e-6) { return false; }
+
+	ap::decimal invDet = 1.0 / det;
+
+	Eigen::Vector3 tVec = ray.point - tri.vertexA;
+	u = tVec.dot(p) * invDet;
+	if (u < 0.0 || u > 1.0) { return false; }
+
+	Eigen::Vector3 qVec = tVec.cross(e1);
+	v = ray.vector.dot(qVec) * invDet;
+	if (v < 0.0 || u + v > 1.0) { return false; }
+
+	t = e2.dot(qVec) * invDet;
+
+	return true;
+}
+
+Eigen::Vector3 intersectRayTriangle(const Ray& ray, const Triangle& tri)
+{
+	ap::decimal t, u, v;
+	if (mollerTrumbore(ray, tri, t, u, v))
+	{
+		Eigen::Vector3 result((1.0-u-v) * tri.vertexA +
+		                      u * tri.vertexB +
+		                      v * tri.vertexC);
+
+		// Check if in direction of ray
+		if (ray.vector.dot(result - ray.point) > 0)
+		{
+			return result;
+		}
+	}
+
+	return Eigen::Vector3(NAN, NAN, NAN);
+}
+
+/*
 Eigen::Vector3 intersectRayTriangle(const Ray& r, const Triangle& t)
 {
 	// Find intersection of plane and ray
@@ -226,6 +288,7 @@ Eigen::Vector3 intersectRayTriangle(const Ray& r, const Triangle& t)
 
 	return result;
 }
+*/
 
 // TODO: Fix for non-convex surfaces
 ap::decimal Mesh::volume() const
