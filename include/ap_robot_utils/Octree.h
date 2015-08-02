@@ -134,6 +134,19 @@ public:
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
 	}
 
+	unsigned int leafCount() const
+	{
+		unsigned int counter = 0;
+		for (shared_ptr<Element<T> > leaf = mTree->nextLeaf();
+		     shared_ptr<Element<T> >() != leaf;
+		     leaf = leaf->nextLeaf())
+		{
+			++counter;
+		}
+
+		return counter;
+	}
+
 	shared_ptr<Element<T> > mTree;
 };
 
