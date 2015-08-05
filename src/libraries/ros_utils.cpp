@@ -40,6 +40,7 @@
 #include <ros/package.h>
 #include <urdf/model.h>
 
+#include <RobotKin/Robot.h>
 #include <RobotKin/Robots/Triage.h>
 #include <RobotKin/urdf_parsing.h>
 
@@ -48,10 +49,19 @@
 namespace ap
 {
 
-std::string parsePackageURL(const std::string url)
+const static std::string PACKAGE_PREFIX = "package://";
+
+std::string parsePackageURL(const std::string& url)
 {
+	size_t is_package = url.find(PACKAGE_PREFIX);
+	if (std::string::npos == is_package)
+	{
+		// Not a package path
+		return url;
+	}
+
 	std::string filename = url;
-	filename.erase(0, strlen("package://"));
+	filename.erase(0, PACKAGE_PREFIX.length());
 	size_t pos = filename.find("/");
 	if (pos != std::string::npos)
 	{
@@ -62,6 +72,17 @@ std::string parsePackageURL(const std::string url)
 	}
 
 	return filename;
+}
+
+std::string packagePathToContents(const std::string& filename)
+{
+	std::string path;
+	path = ap::parsePackageURL(filename);
+	std::ifstream ifs(path);
+	std::stringstream buffer;
+	buffer << ifs.rdbuf();
+	ifs.close();
+	return buffer.str();
 }
 
 ap::shared_ptr<RobotKin::Robot> loadRKRobot(const ros::NodeHandle& nh)

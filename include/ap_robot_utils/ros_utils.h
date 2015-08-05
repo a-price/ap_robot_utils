@@ -41,12 +41,18 @@
 #include <string>
 #include <ap_robot_utils/shared_ptr.h>
 #include <ros/ros.h>
-#include <RobotKin/Robot.h>
+
+namespace RobotKin
+{
+class Robot;
+}
 
 namespace ap
 {
 
-std::string parsePackageURL(const std::string url);
+std::string parsePackageURL(const std::string& url);
+
+std::string packagePathToContents(const std::string& filename);
 
 ap::shared_ptr<RobotKin::Robot> loadRKRobot(const ros::NodeHandle& nh);
 
