@@ -87,6 +87,7 @@ public:
 	 * @param query Point for which to find smallest containing element
 	 */
 	shared_ptr<Element> search(const Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false);
+	shared_ptr<Element> searchConst(const Eigen::Vector3& queryPt, const int maxLevel = -1) const;
 
 	shared_ptr<Element> nextLeaf(const int startChild = 0);
 
@@ -132,6 +133,11 @@ public:
 	shared_ptr<Element<T> > search(const Eigen::Vector3& queryPt, const int maxLevel = -1, const bool drillDownToDepth = false)
 	{
 		return mTree->search(queryPt, maxLevel, drillDownToDepth);
+	}
+
+	shared_ptr<Element<T> > searchConst(const Eigen::Vector3& queryPt, const int maxLevel = -1) const
+	{
+		return mTree->searchConst(queryPt, maxLevel);
 	}
 
 	unsigned int leafCount() const
@@ -330,6 +336,44 @@ shared_ptr<Element<T> > Element<T>::search(const Eigen::Vector3& queryPt, const 
 	}
 
 	return mChildren[nearestIndex]->search(queryPt, levelsRemaining, drillDownToDepth);
+}
+
+template <class T>
+shared_ptr<Element<T> > Element<T>::searchConst(const Eigen::Vector3& queryPt, const int maxLevel) const
+{
+	// Check for maxDepth
+	int levelsRemaining = -1; // Defaults to unlimited levels
+	if (maxLevel == 0)
+	{
+		return mSelf; // Found current level
+	}
+	else if(maxLevel > 0)
+	{
+		levelsRemaining = maxLevel - 1; // Decrement remaining depth
+	}
+
+	// Check for children
+	if (!this->mHasChildren)
+	{
+		// Function has bottomed out
+		return mSelf;
+	}
+
+	// TODO: You can do this with only 3 comparisons
+	// Find closest child
+	float minD = std::numeric_limits<float>::max();
+	int nearestIndex = 0;
+	for (int i = 0; i < 8; ++i)
+	{
+		float d = (queryPt - mChildren[i]->mCenter).squaredNorm(); // Cheaper than regular norm
+		if (d < minD)
+		{
+			minD = d;
+			nearestIndex = i;
+		}
+	}
+
+	return mChildren[nearestIndex]->search(queryPt, levelsRemaining);
 }
 
 template <class T>
