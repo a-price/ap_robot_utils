@@ -182,4 +182,13 @@ ap::shared_ptr<RobotKin::Robot> loadRKRobot(const std::string& filename)
 	return rkRobot;
 }
 
+std::string timeStamp()
+{
+	std::time_t now = std::time(NULL);
+	std::tm * ptm = std::localtime(&now);
+	char timeStr[32];
+	std::strftime(timeStr, 32, "%Y-%m-%d %H:%M:%S", ptm);
+	return std::string(timeStr);
+}
+
 } // namespace ap

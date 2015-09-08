@@ -54,6 +54,8 @@ std::string parsePackageURL(const std::string& url);
 
 std::string packagePathToContents(const std::string& filename);
 
+std::string timeStamp();
+
 ap::shared_ptr<RobotKin::Robot> loadRKRobot(const ros::NodeHandle& nh);
 
 ap::shared_ptr<RobotKin::Robot> loadRKRobot(const std::string& filename);
