@@ -50,6 +50,8 @@ class Robot;
 namespace ap
 {
 
+std::string rosWorkingDir();
+
 std::string parsePackageURL(const std::string& url);
 
 std::string packagePathToContents(const std::string& filename);

@@ -36,6 +36,9 @@
  */
 
 #include "ap_robot_utils/ros_utils.h"
+
+#include <ros/platform.h>
+
 #include <cstring>
 #include <ros/package.h>
 #include <urdf/model.h>
@@ -189,6 +192,19 @@ std::string timeStamp()
 	char timeStr[32];
 	std::strftime(timeStr, 32, "%Y-%m-%d %H:%M:%S", ptm);
 	return std::string(timeStr);
+}
+
+std::string rosWorkingDir()
+{
+	std::string working_dir;
+	ros::get_environment_variable(working_dir, "ROS_HOME");
+	if (working_dir == "")
+	{
+		ros::get_environment_variable(working_dir, "HOME");
+		working_dir += "/.ros/";
+	}
+
+	return working_dir;
 }
 
 } // namespace ap
