@@ -40,12 +40,73 @@
 
 #include <ap_robot_utils/eigen_definitions.h>
 
+#include <vector>
+#include <list>
+#include <algorithm>
+
 namespace ap
 {
 
 inline ap::decimal randbetween(ap::decimal min, ap::decimal max)
 {
 	return (max - min) * ( (ap::decimal)rand() / (ap::decimal)RAND_MAX ) + min;
+}
+
+template <class T>
+void backtrackLCS(const Eigen::MatrixXi& C, const std::vector<T>& a, const std::vector<T>& b, const int i, const int j, std::vector<T>& seq)
+{
+	if (0 == i || 0 == j)
+	{
+		seq.clear(); // Reached edge, begin with empty string
+	}
+	else if (a[i-1] == b[j-1])
+	{
+		backtrackLCS(C, a, b, i-1, j-1, seq);
+		seq.push_back(a[i-1]);
+	}
+	else
+	{
+		if (C(i, j-1) > C(i-1,j))
+			backtrackLCS(C, a, b, i, j-1, seq);
+		else
+			backtrackLCS(C, a, b, i-1, j, seq);
+	}
+}
+
+/**
+ * @brief LCS Computes the Longest Common Subsequence of the two sequences provided
+ * @param a First sequence
+ * @param b Second sequence
+ * @return Longest Common Subsequence
+ * @see https://en.wikipedia.org/wiki/Longest_common_subsequence_problem#Code_for_the_dynamic_programming_solution
+ */
+template <class T>
+void LCS(const std::vector<T>& a, const std::vector<T>& b, std::vector<T>& lcs)
+{
+	const int n = a.size();
+	const int m = b.size();
+
+	Eigen::MatrixXi C(n+1,m+1); // int* C = new int[n*m];
+
+	C(0,0) = 0;
+	for (int i = 1; i <= n; ++i)
+		C(i,0) = 0;
+	for (int j = 1; j <= m; ++j)
+		C(0,j) = 0;
+
+	for (int i = 1; i <= n; ++i)
+	{
+		for (int j = 1; j <= m; ++j)
+		{
+			if (a[i-1] == b[j-1])
+				C(i,j) = C(i-1,j-1) + 1;
+			else
+				C(i,j) = std::max({C(i,j-1), C(i-1,j)});
+		}
+	}
+
+	lcs.reserve(C(n,m));
+	backtrackLCS(C, a, b, n, m, lcs);
 }
 
 }
