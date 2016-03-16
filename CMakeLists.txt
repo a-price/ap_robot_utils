@@ -83,6 +83,7 @@ add_library(${PROJECT_NAME}
   src/libraries/SimpleCSVReader.cpp
   src/libraries/DHParams.cpp
   src/libraries/OrientationBins.cpp
+  src/libraries/AugmentedMesh.cpp
   ${headers}
   ${felz_source})
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${BUILD_FLAGS})

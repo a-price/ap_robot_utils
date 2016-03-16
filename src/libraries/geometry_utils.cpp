@@ -313,7 +313,7 @@ ap::decimal Mesh::volume() const
 
 Eigen::Vector3 Mesh::com() const
 {
-	const int n = faces.size();
+	const int n = vertices.size();
 	Eigen::Vector3 c = Eigen::Vector3::Zero();
 	for (int i = 0; i < n; ++i)
 	{
@@ -324,7 +324,7 @@ Eigen::Vector3 Mesh::com() const
 
 Eigen::Vector3 Mesh::cobb() const
 {
-	const int n = faces.size();
+	const int n = vertices.size();
 	if (0 == n) { return Eigen::Vector3::Zero(); }
 
 	Eigen::Vector3 min = vertices[0];
