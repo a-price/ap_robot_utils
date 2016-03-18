@@ -62,6 +62,7 @@ typedef Matrix<ap::decimal, 5, 1> Vector5;
 typedef Matrix<ap::decimal, 6, 1> Vector6;
 typedef Matrix<ap::decimal, Dynamic, 1> VectorX;
 
+typedef Matrix<ap::decimal, 2, 2> Matrix2;
 typedef Matrix<ap::decimal, 3, 3> Matrix3;
 typedef Matrix<ap::decimal, 4, 4> Matrix4;
 
