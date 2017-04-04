@@ -26,9 +26,6 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   resource_retriever
 )
-if ($ENV{ROS_DISTRO} STREQUAL "indigo")
-  find_package(cmake_modules REQUIRED)
-endif ($ENV{ROS_DISTRO} STREQUAL "indigo")
 
 
 ## System dependencies are found with CMake's conventions
@@ -36,9 +33,9 @@ find_package(OpenCV REQUIRED)
 include_directories(SYSTEM ${OpenCV_INCLUDE_DIR})
 link_libraries(${OpenCV_LIBS})
 
-find_package(Eigen REQUIRED)
-include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
-add_definitions(${EIGEN_DEFINITIONS})
+find_package(Eigen3 REQUIRED)
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIRS})
+add_definitions(${EIGEN3_DEFINITIONS})
 
 # /usr/local/lib/cmake/assimp-3.0/
 find_package(ASSIMP REQUIRED)
